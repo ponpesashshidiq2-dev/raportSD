@@ -48,9 +48,10 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
 
 <?php foreach ($terpilih as $s):
     $sid = (int) $s['id'];
-    $nilaiEkstra = all('SELECT e.nama, n.predikat FROM nilai_ekstra n JOIN ekstra e ON e.id=n.ekstra_id
+    $nilaiEkstra = all('SELECT e.nama, n.predikat, n.catatan FROM nilai_ekstra n JOIN ekstra e ON e.id=n.ekstra_id
         WHERE n.siswa_id=? AND n.ta=? AND n.semester=? ORDER BY e.urutan, e.nama', [$sid, $c['ta'], $c['semester']]);
     $hadir = one('SELECT * FROM kehadiran WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']]);
+    $catatanTeks = (one('SELECT teks FROM catatan_wali WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']])['teks'] ?? '');
     $no = 0; ?>
 <div class="raport-sheet">
   <div class="rp-head">
@@ -103,33 +104,48 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
     </tbody>
   </table>
 
-  <?php if ($nilaiEkstra): ?>
-    <div class="rp-section-title">Ekstrakurikuler</div>
-    <table class="rp-tbl" style="max-width:560px">
-      <thead><tr><th style="width:42px">No</th><th>Kegiatan</th><th style="width:140px">Predikat</th></tr></thead>
-      <tbody>
-      <?php $ne = 0; foreach ($nilaiEkstra as $ek): $ne++; ?>
-        <tr><td class="no"><?= $ne ?></td><td><?= e($ek['nama']) ?></td><td class="nilai"><?= e($ek['predikat']) ?></td></tr>
-      <?php endforeach; ?>
-      </tbody>
-    </table>
-  <?php endif; ?>
-
-  <div class="rp-section-title">Ketidakhadiran</div>
-  <table class="rp-kehadiran">
+  <table class="rp-tbl" style="margin-top:14px">
     <thead>
-      <tr><th rowspan="2" style="width:70px">No</th><th colspan="3">Ketidakhadiran (hari)</th></tr>
-      <tr><th>Sakit</th><th>Izin</th><th>Tanpa Keterangan</th></tr>
+      <tr>
+        <th style="width:46px">No.</th>
+        <th style="width:42%">Ekstrakurikuler</th>
+        <th>Keterangan</th>
+      </tr>
     </thead>
     <tbody>
+    <?php if ($nilaiEkstra): $ne = 0; foreach ($nilaiEkstra as $ek): $ne++; ?>
       <tr>
-        <td class="no">1</td>
-        <td><?= (int) ($hadir['sakit'] ?? 0) ?></td>
-        <td><?= (int) ($hadir['izin'] ?? 0) ?></td>
-        <td><?= (int) ($hadir['tka'] ?? 0) ?></td>
+        <td class="no"><?= $ne ?></td>
+        <td><?= e($ek['nama']) ?></td>
+        <td><?= e($ek['predikat']) ?><?= $ek['catatan'] !== '' ? '<br><span style="font-size:11.5px;font-weight:400">' . e($ek['catatan']) . '</span>' : '' ?></td>
       </tr>
+    <?php endforeach; else: ?>
+      <tr><td class="no">1</td><td></td><td></td></tr>
+      <tr><td class="no">2</td><td></td><td></td></tr>
+      <tr><td class="no">dst.</td><td></td><td></td></tr>
+    <?php endif; ?>
     </tbody>
   </table>
+
+  <div class="rp-dua">
+    <div class="rp-box">
+      <div class="rp-box-title">Ketidakhadiran</div>
+      <table class="rp-hadir">
+        <tr><td>Sakit</td><td class="val"><?= (int) ($hadir['sakit'] ?? 0) ?> hari</td></tr>
+        <tr><td>Izin</td><td class="val"><?= (int) ($hadir['izin'] ?? 0) ?> hari</td></tr>
+        <tr><td>Tanpa Keterangan</td><td class="val"><?= (int) ($hadir['tka'] ?? 0) ?> hari</td></tr>
+      </table>
+    </div>
+    <div class="rp-box">
+      <div class="rp-box-title">Catatan Wali Kelas</div>
+      <div class="rp-box-body"><?= $catatanTeks !== '' ? nl2br(e($catatanTeks)) : '' ?></div>
+    </div>
+  </div>
+
+  <div class="rp-box rp-tanggapan">
+    <div class="rp-box-title">Tanggapan Orang Tua/ Wali Murid</div>
+    <div class="rp-box-body"></div>
+  </div>
 
   <div class="rp-place"><?= e($p['kota'] ?: '........................') ?>, <?= e(tgl_indo()) ?></div>
   <div class="rp-ttd">

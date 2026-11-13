@@ -177,7 +177,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash_set('success', 'Data siswa diperbarui.');
         } else {
             insert_row('siswa', $data);
+            $id = (int) db()->lastInsertId();
             flash_set('success', 'Siswa baru ditambahkan.');
+        }
+        $teksCatatan = trim($_POST['catatan_wali'] ?? '');
+        $adaCat = one('SELECT id FROM catatan_wali WHERE siswa_id=? AND ta=? AND semester=?', [$id, $c['ta'], $c['semester']]);
+        if ($adaCat) {
+            update_row('catatan_wali', ['teks' => $teksCatatan], 'id=?', [$adaCat['id']]);
+        } else {
+            insert_row('catatan_wali', ['siswa_id' => $id, 'ta' => $c['ta'], 'semester' => $c['semester'], 'teks' => $teksCatatan]);
         }
         redirect('siswa');
     }
@@ -188,6 +196,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         run('DELETE FROM nilai_sumatif WHERE siswa_id=?', [$id]);
         run('DELETE FROM nilai_ekstra WHERE siswa_id=?', [$id]);
         run('DELETE FROM kehadiran WHERE siswa_id=?', [$id]);
+        run('DELETE FROM catatan_wali WHERE siswa_id=?', [$id]);
         run('DELETE FROM siswa WHERE id=?', [$id]);
         flash_set('success', 'Siswa beserta nilai yang terkait dihapus.');
         redirect('siswa');
@@ -283,6 +292,11 @@ $edit = null;
 if (!empty($_GET['edit'])) {
     $edit = one('SELECT * FROM siswa WHERE id=?', [(int) $_GET['edit']]);
 }
+$catatanWali = '';
+if ($edit) {
+    $cn = one('SELECT teks FROM catatan_wali WHERE siswa_id=? AND ta=? AND semester=?', [(int) $edit['id'], $c['ta'], $c['semester']]);
+    $catatanWali = $cn['teks'] ?? '';
+}
 $totalSemua = (int) scalar('SELECT COUNT(*) FROM siswa');
 
 page_head('Data Siswa', 'Kelola data peserta didik — daftar terkunci sesuai angkatan Anda.',
@@ -349,6 +363,13 @@ page_head('Data Siswa', 'Kelola data peserta didik — daftar terkunci sesuai an
     <div class="field"><label>Nama Orang Tua / Wali</label><input type="text" name="ortu" value="<?= e($edit['ortu'] ?? '') ?>"></div>
     <div class="field"><label>No. HP</label><input type="text" name="telp" value="<?= e($edit['telp'] ?? '') ?>"></div>
     <div class="field"><label>Rombel</label><input type="text" name="rombel" value="<?= e($edit['rombel'] ?? ('Kelas ' . ($edit['kelas'] ?? $kelasDefault))) ?>"></div>
+  </div>
+  <div class="form-row">
+    <div class="field" style="grid-column:1/-1">
+      <label>Catatan Wali Kelas &middot; Semester <?= (int) $c['semester'] ?> &middot; <?= e($c['ta']) ?></label>
+      <textarea name="catatan_wali" rows="3" placeholder="Catatan wali kelas untuk raport semester ini — tampil pada kotak Catatan Wali Kelas di raport cetak..."><?= e($catatanWali) ?></textarea>
+      <div class="hint">Khusus siswa yang sedang diubah/ditambah. Tampil di raport sesuai semester &amp; tahun ajaran konteks.</div>
+    </div>
   </div>
   <div class="page-actions">
     <button class="btn" type="submit"><?= $edit ? 'Simpan Perubahan' : 'Tambah Siswa' ?></button>

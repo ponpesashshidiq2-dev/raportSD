@@ -19,6 +19,7 @@ function db(): PDO
         }
         migrate_walikelas($pdo);
         migrate_users($pdo);
+        migrate_catatan_wali($pdo);
     }
     return $pdo;
 }

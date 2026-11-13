@@ -135,6 +135,14 @@ CREATE TABLE kehadiran (
   tka INTEGER NOT NULL DEFAULT 0,
   UNIQUE (siswa_id, ta, semester)
 );
+CREATE TABLE catatan_wali (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  siswa_id INTEGER NOT NULL,
+  ta TEXT NOT NULL,
+  semester INTEGER NOT NULL,
+  teks TEXT NOT NULL DEFAULT '',
+  UNIQUE (siswa_id, ta, semester)
+);
 CREATE INDEX idx_nf_mapel ON nilai_formatif (mapel_id, ta, semester);
 CREATE INDEX idx_ns_mapel ON nilai_sumatif (mapel_id, ta, semester);
 CREATE INDEX idx_siswa_kelas ON siswa (kelas, status);
@@ -241,4 +249,16 @@ function migrate_users(PDO $pdo): void
     if ($cols && !array_filter($cols, fn($c) => ($c['name'] ?? '') === 'angkatan')) {
         $pdo->exec('ALTER TABLE users ADD COLUMN angkatan INTEGER NOT NULL DEFAULT 0');
     }
+}
+
+function migrate_catatan_wali(PDO $pdo): void
+{
+    $pdo->exec("CREATE TABLE IF NOT EXISTS catatan_wali (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      siswa_id INTEGER NOT NULL,
+      ta TEXT NOT NULL,
+      semester INTEGER NOT NULL,
+      teks TEXT NOT NULL DEFAULT '',
+      UNIQUE (siswa_id, ta, semester)
+    )");
 }
