@@ -1,0 +1,211 @@
+<?php
+
+function xlsx_read(string $path, string $originalName = ''): array
+{
+    $name = $originalName !== '' ? $originalName : basename($path);
+    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+    if ($ext === 'csv' || $ext === 'txt') {
+        return csv_read($path);
+    }
+    $zip = new ZipArchive();
+    if ($zip->open($path) !== true) {
+        if ($ext === '' || $ext === 'xls') {
+            return csv_read($path);
+        }
+        throw new RuntimeException('File Excel tidak dapat dibuka.');
+    }
+    $shared = [];
+    if ($zip->locateName('xl/sharedStrings.xml') !== false) {
+        $xml = simplexml_load_string($zip->getFromName('xl/sharedStrings.xml'));
+        if ($xml) {
+            foreach ($xml->si as $si) {
+                if (isset($si->t)) {
+                    $shared[] = (string) $si->t;
+                } else {
+                    $txt = '';
+                    foreach ($si->r ?? [] as $r) {
+                        $txt .= (string) $r->t;
+                    }
+                    $shared[] = $txt;
+                }
+            }
+        }
+    }
+    $sheetName = null;
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $n = $zip->getNameIndex($i);
+        if (preg_match('#^xl/worksheets/sheet\d+\.xml$#', $n)) {
+            $sheetName = $n;
+            break;
+        }
+    }
+    if (!$sheetName) {
+        $zip->close();
+        throw new RuntimeException('Lembar kerja tidak ditemukan pada file Excel.');
+    }
+    $tmp = tempnam(sys_get_temp_dir(), 'xls');
+    file_put_contents($tmp, $zip->getFromName($sheetName));
+    $zip->close();
+
+    $rows = [];
+    $reader = new XMLReader();
+    $reader->open($tmp);
+    $colIndex = 0;
+    $rowIndex = -1;
+    while ($reader->read()) {
+        if ($reader->nodeType === XMLReader::ELEMENT && $reader->localName === 'row') {
+            $rowIndex++;
+            $rows[$rowIndex] = [];
+            $colIndex = 0;
+        } elseif ($reader->nodeType === XMLReader::ELEMENT && $reader->localName === 'c') {
+            $ref = $reader->getAttribute('r');
+            $type = $reader->getAttribute('t');
+            $colIndex = $ref !== null ? xlsx_col_to_num(preg_replace('/\d+/', '', $ref)) : $colIndex;
+            $value = '';
+            $inner = $reader->readInnerXML();
+            if ($type === 's') {
+                $v = '';
+                if (preg_match('#<v>(.*?)</v>#s', $inner, $m)) {
+                    $v = $m[1];
+                }
+                $value = $shared[(int) $v] ?? '';
+            } elseif ($type === 'inlineStr') {
+                $value = preg_match('#<t[^>]*>(.*?)</t>#s', $inner, $m) ? html_entity_decode($m[1], ENT_QUOTES) : '';
+            } else {
+                $value = preg_match('#<v>(.*?)</v>#s', $inner, $m) ? $m[1] : '';
+            }
+            $rows[$rowIndex][$colIndex] = $value;
+            $colIndex++;
+        }
+    }
+    $reader->close();
+    unlink($tmp);
+
+    $out = [];
+    foreach ($rows as $r) {
+        if (!$r) {
+            continue;
+        }
+        ksort($r);
+        $out[] = array_values($r);
+    }
+    return $out;
+}
+
+function xlsx_col_to_num(string $col): int
+{
+    $n = 0;
+    foreach (str_split($col) as $ch) {
+        $n = $n * 26 + (ord(strtoupper($ch)) - 64);
+    }
+    return $n - 1;
+}
+
+function csv_read(string $path): array
+{
+    $content = file_get_contents($path);
+    if (strncmp($content, "\xEF\xBB\xBF", 3) === 0) {
+        $content = substr($content, 3);
+    }
+    $first = strtok($content, "\r\n") ?: '';
+    $delim = ',';
+    foreach ([',' => 'comma', ';' => 'semi', "\t" => 'tab'] as $d => $name) {
+        if (substr_count($first, $d) > substr_count($first, $delim)) {
+            $delim = $d;
+        }
+    }
+    $rows = [];
+    $handle = fopen('php://temp', 'r+');
+    fwrite($handle, $content);
+    rewind($handle);
+    while (($row = fgetcsv($handle, 0, $delim)) !== false) {
+        $rows[] = array_map(fn($v) => is_string($v) ? trim($v) : $v, $row);
+    }
+    fclose($handle);
+    return $rows;
+}
+
+function xlsx_download(string $filename, array $rows, array $widths = []): void
+{
+    $zip = new ZipArchive();
+    $tmp = tempnam(sys_get_temp_dir(), 'xlsx');
+    $zip->open($tmp, ZipArchive::OVERWRITE);
+
+    $zip->addFromString('[Content_Types].xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>');
+
+    $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>');
+
+    $zip->addFromString('xl/workbook.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Data" sheetId="1" r:id="rId1"/></sheets>
+</workbook>');
+
+    $zip->addFromString('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>');
+
+    $sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+    $rNum = 0;
+    foreach ($rows as $row) {
+        $rNum++;
+        $sheet .= '<row r="' . $rNum . '">';
+        $cNum = 0;
+        foreach ($row as $val) {
+            $ref = xlsx_num_to_col($cNum) . $rNum;
+            $isNum = is_int($val) || is_float($val);
+            if ($isNum) {
+                $sheet .= '<c r="' . $ref . '"><v>' . $val . '</v></c>';
+            } else {
+                $sheet .= '<c r="' . $ref . '" t="inlineStr"><is><t>' . xlsx_esc((string) $val) . '</t></is></c>';
+            }
+            $cNum++;
+        }
+        $sheet .= '</row>';
+    }
+    $sheet .= '</sheetData>';
+    if ($widths) {
+        $sheet .= '<cols>';
+        foreach ($widths as $i => $w) {
+            $sheet .= '<col min="' . ($i + 1) . '" max="' . ($i + 1) . '" width="' . $w . '" customWidth="1"/>';
+        }
+        $sheet .= '</cols>';
+    }
+    $sheet .= '</worksheet>';
+    $zip->addFromString('xl/worksheets/sheet1.xml', $sheet);
+    $zip->close();
+
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Content-Length: ' . filesize($tmp));
+    readfile($tmp);
+    unlink($tmp);
+    exit;
+}
+
+function xlsx_num_to_col(int $n): string
+{
+    $s = '';
+    $n++;
+    while ($n > 0) {
+        $m = ($n - 1) % 26;
+        $s = chr(65 + $m) . $s;
+        $n = intdiv($n - 1, 26);
+    }
+    return $s;
+}
+
+function xlsx_esc(string $s): string
+{
+    return htmlspecialchars($s, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+}

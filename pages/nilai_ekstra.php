@@ -1,0 +1,101 @@
+<?php
+$c = ctx();
+$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$c['kelas']]);
+$ekstraList = all('SELECT * FROM ekstra ORDER BY urutan, nama');
+$predikatOps = ['' => '-', 'A' => 'A (Sangat Baik)', 'B' => 'B (Baik)', 'C' => 'C (Cukup)', 'D' => 'D (Kurang)'];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!can_edit()) {
+        flash_set('error', 'Anda tidak memiliki akses untuk menginput nilai.');
+        redirect('nilai_ekstra');
+    }
+    $nilai = $_POST['nilai'] ?? [];
+    $tersimpan = 0;
+    db()->beginTransaction();
+    try {
+        foreach ($ekstraList as $ek) {
+            foreach ($siswas as $s) {
+                $key = $ek['id'] . '_' . $s['id'];
+                $p = trim((string) ($nilai[$key] ?? ''));
+                $ada = one('SELECT id FROM nilai_ekstra WHERE siswa_id=? AND ekstra_id=? AND ta=? AND semester=?',
+                    [$s['id'], $ek['id'], $c['ta'], $c['semester']]);
+                if ($p === '') {
+                    if ($ada) {
+                        run('DELETE FROM nilai_ekstra WHERE id=?', [$ada['id']]);
+                    }
+                    continue;
+                }
+                $row = ['predikat' => $p, 'catatan' => ''];
+                if ($ada) {
+                    update_row('nilai_ekstra', $row, 'id=?', [$ada['id']]);
+                } else {
+                    insert_row('nilai_ekstra', $row + [
+                        'siswa_id' => $s['id'], 'ekstra_id' => $ek['id'],
+                        'ta' => $c['ta'], 'semester' => $c['semester'],
+                    ]);
+                }
+                $tersimpan++;
+            }
+        }
+        db()->commit();
+        flash_set('success', "Nilai ekstrakurikuler tersimpan: $tersimpan sel. Sel kosong tidak tampil di raport.");
+    } catch (Throwable $ex) {
+        db()->rollBack();
+        flash_set('error', 'Gagal menyimpan: ' . $ex->getMessage());
+    }
+    redirect('nilai_ekstra');
+}
+
+$existing = [];
+foreach (all('SELECT ekstra_id, siswa_id, predikat, catatan FROM nilai_ekstra WHERE ta=? AND semester=?',
+    [$c['ta'], $c['semester']]) as $r) {
+    $existing[$r['ekstra_id'] . '_' . $r['siswa_id']] = $r['predikat'];
+}
+
+page_head('Input Nilai Ekstrakurikuler', 'Siswa hanya menampilkan kegiatan yang nilainya diisi pada raport.');
+echo context_bar();
+if (!$ekstraList): ?>
+  <div class="alert alert-warning">Belum ada kegiatan. Tambahkan pada menu <a href="index.php?page=ekstra">Ekstrakurikuler</a>.</div>
+<?php elseif (!$siswas): ?>
+  <div class="card empty">Belum ada siswa pada kelas <?= $c['kelas'] ?>. <a href="index.php?page=siswa">Tambah data siswa</a>.</div>
+<?php else: ?>
+<form method="post" action="index.php?page=nilai_ekstra">
+  <?= csrf_field() ?>
+  <div class="table-wrap">
+    <table class="tbl">
+      <caption>Kelas <?= $c['kelas'] ?> - Semester <?= $c['semester'] ?> - <?= e($c['ta']) ?></caption>
+      <thead>
+        <tr>
+          <th class="center" style="width:40px">No</th>
+          <th>Nama Siswa</th>
+          <?php foreach ($ekstraList as $ek): ?>
+            <th class="center" title="<?= e($ek['nama']) ?>"><?= e(mb_strimwidth($ek['nama'], 0, 18, '…')) ?></th>
+          <?php endforeach; ?>
+        </tr>
+      </thead>
+      <tbody>
+      <?php $no = 0; foreach ($siswas as $s): $no++; ?>
+        <tr>
+          <td class="center"><?= $no ?></td>
+          <td class="name-cell"><?= e($s['nama']) ?></td>
+          <?php foreach ($ekstraList as $ek):
+              $k = $ek['id'] . '_' . $s['id']; ?>
+            <td class="center">
+              <select name="nilai[<?= $k ?>]" style="min-width:64px">
+                <?php foreach ($predikatOps as $val => $lbl): ?>
+                  <option value="<?= $val ?>"<?= ($existing[$k] ?? '') === $val ? ' selected' : '' ?>><?= e($lbl) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </td>
+          <?php endforeach; ?>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+  <div class="toolbar mt">
+    <button class="btn" type="submit">Simpan Nilai Ekstrakurikuler</button>
+    <span class="hint">Pilih <b>-</b> untuk menghapus nilai. Predikat A-D setara dengan catatan wali kelas.</span>
+  </div>
+</form>
+<?php endif; ?>
