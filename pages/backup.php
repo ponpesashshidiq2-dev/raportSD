@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->beginTransaction();
         try {
             $n = 0;
-            foreach (['nilai_formatif', 'nilai_sumatif', 'nilai_ekstra', 'kehadiran', 'sumatif_jenis'] as $t) {
+            foreach (['nilai_formatif', 'nilai_sumatif', 'nilai_ekstra', 'kokurikuler_nilai', 'kokurikuler_capaian', 'kehadiran', 'sumatif_jenis'] as $t) {
                 $n += run('DELETE FROM ' . $t);
             }
             db()->commit();
@@ -102,7 +102,7 @@ page_head('Backup & Restore', 'Unduh seluruh data sebagai file JSON, atau pulihk
 <div class="grid grid-2">
   <div class="card">
     <h3>Backup (Unduh Data)</h3>
-    <p class="hint">File backup berisi seluruh tabel: profil, pengguna, siswa, mapel, CP, TP, nilai formatif/sumatif, ekstrakurikuler, dan kehadiran. Simpan file di lokasi aman.</p>
+    <p class="hint">File backup berisi seluruh tabel: profil, pengguna, siswa, mapel, CP, TP, nilai formatif/sumatif, kokurikuler, ekstrakurikuler, dan kehadiran. Simpan file di lokasi aman.</p>
     <div class="table-wrap mb">
       <table class="tbl">
         <tbody>
@@ -132,7 +132,7 @@ page_head('Backup & Restore', 'Unduh seluruh data sebagai file JSON, atau pulihk
     <hr style="border:none;border-top:1px solid var(--line);margin:18px 0">
 
     <h3>Kosongkan Seluruh Nilai</h3>
-    <p class="hint">Menghapus semua nilai formatif, sumatif, ekstrakurikuler, kehadiran, dan daftar penilaian. Data siswa, mapel, CP, serta TP tetap tersimpan. Berguna di awal tahun ajaran baru.</p>
+    <p class="hint">Menghapus semua nilai formatif, sumatif, kokurikuler, ekstrakurikuler, kehadiran, dan daftar penilaian. Data siswa, mapel, CP, serta TP tetap tersimpan. Berguna di awal tahun ajaran baru.</p>
     <form method="post" action="index.php?page=backup" data-confirm="Hapus seluruh nilai? Tindakan ini tidak dapat dibatalkan.">
       <?= csrf_field() ?>
       <input type="hidden" name="aksi" value="reset_nilai">

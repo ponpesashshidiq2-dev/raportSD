@@ -197,6 +197,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         run('DELETE FROM nilai_ekstra WHERE siswa_id=?', [$id]);
         run('DELETE FROM kehadiran WHERE siswa_id=?', [$id]);
         run('DELETE FROM catatan_wali WHERE siswa_id=?', [$id]);
+        run('DELETE FROM kokurikuler_nilai WHERE siswa_id=?', [$id]);
+        run('DELETE FROM kokurikuler_capaian WHERE siswa_id=?', [$id]);
         run('DELETE FROM siswa WHERE id=?', [$id]);
         flash_set('success', 'Siswa beserta nilai yang terkait dihapus.');
         redirect('siswa');

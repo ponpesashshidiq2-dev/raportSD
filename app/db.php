@@ -143,6 +143,30 @@ CREATE TABLE catatan_wali (
   teks TEXT NOT NULL DEFAULT '',
   UNIQUE (siswa_id, ta, semester)
 );
+CREATE TABLE kokurikuler_kegiatan (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  nama TEXT NOT NULL,
+  tujuan TEXT NOT NULL DEFAULT '',
+  urutan INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE kokurikuler_nilai (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  siswa_id INTEGER NOT NULL,
+  kegiatan_id INTEGER NOT NULL,
+  ta TEXT NOT NULL,
+  semester INTEGER NOT NULL,
+  keterangan TEXT NOT NULL DEFAULT '',
+  UNIQUE (siswa_id, kegiatan_id, ta, semester)
+);
+CREATE TABLE kokurikuler_capaian (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  siswa_id INTEGER NOT NULL,
+  ta TEXT NOT NULL,
+  semester INTEGER NOT NULL,
+  predikat TEXT NOT NULL DEFAULT '',
+  deskripsi TEXT NOT NULL DEFAULT '',
+  UNIQUE (siswa_id, ta, semester)
+);
 CREATE INDEX idx_nf_mapel ON nilai_formatif (mapel_id, ta, semester);
 CREATE INDEX idx_ns_mapel ON nilai_sumatif (mapel_id, ta, semester);
 CREATE INDEX idx_siswa_kelas ON siswa (kelas, status);
@@ -213,6 +237,11 @@ function install_db(PDO $pdo): void
     foreach (daftar_ekstra() as $ek) {
         $stmt->execute([$ek['nama'], $ek['urutan']]);
     }
+
+    $stmt = $pdo->prepare('INSERT INTO kokurikuler_kegiatan (nama, tujuan, urutan) VALUES (?,?,?)');
+    foreach (daftar_kokurikuler() as $kk) {
+        $stmt->execute([$kk['nama'], $kk['tujuan'], $kk['urutan']]);
+    }
 }
 
 function db_tables(): array
@@ -261,4 +290,39 @@ function migrate_catatan_wali(PDO $pdo): void
       teks TEXT NOT NULL DEFAULT '',
       UNIQUE (siswa_id, ta, semester)
     )");
+}
+
+function migrate_kokurikuler(PDO $pdo): void
+{
+    $pdo->exec("CREATE TABLE IF NOT EXISTS kokurikuler_kegiatan (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      nama TEXT NOT NULL,
+      tujuan TEXT NOT NULL DEFAULT '',
+      urutan INTEGER NOT NULL DEFAULT 0
+    )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS kokurikuler_nilai (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      siswa_id INTEGER NOT NULL,
+      kegiatan_id INTEGER NOT NULL,
+      ta TEXT NOT NULL,
+      semester INTEGER NOT NULL,
+      keterangan TEXT NOT NULL DEFAULT '',
+      UNIQUE (siswa_id, kegiatan_id, ta, semester)
+    )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS kokurikuler_capaian (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      siswa_id INTEGER NOT NULL,
+      ta TEXT NOT NULL,
+      semester INTEGER NOT NULL,
+      predikat TEXT NOT NULL DEFAULT '',
+      deskripsi TEXT NOT NULL DEFAULT '',
+      UNIQUE (siswa_id, ta, semester)
+    )");
+    if ((int) $pdo->query('SELECT COUNT(*) FROM kokurikuler_kegiatan')->fetchColumn() === 0) {
+        require_once APP_DIR . '/app/kurikulum.php';
+        $stmt = $pdo->prepare('INSERT INTO kokurikuler_kegiatan (nama, tujuan, urutan) VALUES (?,?,?)');
+        foreach (daftar_kokurikuler() as $kk) {
+            $stmt->execute([$kk['nama'], $kk['tujuan'], $kk['urutan']]);
+        }
+    }
 }

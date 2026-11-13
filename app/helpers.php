@@ -20,6 +20,7 @@ function db(): PDO
         migrate_walikelas($pdo);
         migrate_users($pdo);
         migrate_catatan_wali($pdo);
+        migrate_kokurikuler($pdo);
     }
     return $pdo;
 }
@@ -177,6 +178,8 @@ function menu_allowed(string $page): bool
         'nilai_sumatif' => ['admin', 'wali'],
         'ekstra' => ['admin', 'wali', 'kepsek'],
         'nilai_ekstra' => ['admin', 'wali'],
+        'kokurikuler' => ['admin', 'wali', 'kepsek'],
+        'nilai_kokurikuler' => ['admin', 'wali'],
         'kehadiran' => ['admin', 'wali'],
         'cetak' => ['admin', 'wali', 'kepsek'],
         'backup' => ['admin'],
@@ -201,6 +204,8 @@ function page_title(string $page): string
         'nilai_sumatif' => 'Input Nilai Sumatif',
         'ekstra' => 'Ekstrakurikuler',
         'nilai_ekstra' => 'Input Nilai Ekstrakurikuler',
+        'kokurikuler' => 'Kokurikuler',
+        'nilai_kokurikuler' => 'Input Nilai Kokurikuler',
         'kehadiran' => 'Kehadiran Siswa',
         'cetak' => 'Cetak Raport',
         'backup' => 'Backup & Restore',

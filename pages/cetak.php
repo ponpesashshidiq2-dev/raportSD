@@ -48,6 +48,10 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
 
 <?php foreach ($terpilih as $s):
     $sid = (int) $s['id'];
+    $nilaiKok = all('SELECT k.nama, n.keterangan FROM kokurikuler_nilai n JOIN kokurikuler_kegiatan k ON k.id=n.kegiatan_id
+        WHERE n.siswa_id=? AND n.ta=? AND n.semester=? ORDER BY k.urutan, k.nama', [$sid, $c['ta'], $c['semester']]);
+    $capaianKok = one('SELECT deskripsi FROM kokurikuler_capaian WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']]);
+    $deskKok = $capaianKok['deskripsi'] ?? '';
     $nilaiEkstra = all('SELECT e.nama, n.predikat, n.catatan FROM nilai_ekstra n JOIN ekstra e ON e.id=n.ekstra_id
         WHERE n.siswa_id=? AND n.ta=? AND n.semester=? ORDER BY e.urutan, e.nama', [$sid, $c['ta'], $c['semester']]);
     $hadir = one('SELECT * FROM kehadiran WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']]);
@@ -103,6 +107,34 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
     <?php endforeach; ?>
     </tbody>
   </table>
+
+  <table class="rp-tbl" style="margin-top:14px">
+    <thead>
+      <tr>
+        <th style="width:46px">No.</th>
+        <th style="width:42%">Kokurikuler</th>
+        <th>Keterangan</th>
+      </tr>
+    </thead>
+    <tbody>
+    <?php if ($nilaiKok): $nk = 0; foreach ($nilaiKok as $kk): $nk++; ?>
+      <tr>
+        <td class="no"><?= $nk ?></td>
+        <td><?= e($kk['nama']) ?></td>
+        <td><?= e($kk['keterangan']) ?></td>
+      </tr>
+    <?php endforeach; else: ?>
+      <tr><td class="no">1</td><td></td><td></td></tr>
+      <tr><td class="no">2</td><td></td><td></td></tr>
+      <tr><td class="no">dst.</td><td></td><td></td></tr>
+    <?php endif; ?>
+    </tbody>
+  </table>
+
+  <div class="rp-box rp-kok-desk">
+    <div class="rp-box-title">Deskripsi Kokurikuler</div>
+    <div class="rp-box-body"><?= $deskKok !== '' ? nl2br(e($deskKok)) : '' ?></div>
+  </div>
 
   <table class="rp-tbl" style="margin-top:14px">
     <thead>

@@ -40,6 +40,67 @@ function daftar_ekstra(): array
     ];
 }
 
+function daftar_kokurikuler(): array
+{
+    return [
+        ['nama' => 'Projek Kolaboratif Lintas Disiplin', 'tujuan' => 'memperkuat kemampuan bekerja sama, penalaran kritis, dan kreativitas melalui projek pembelajaran lintas mata pelajaran', 'urutan' => 1],
+        ['nama' => 'Gerakan 7 Kebiasaan Anak Indonesia Hebat (7KAIH)', 'tujuan' => 'membiasakan kebiasaan positif sehari-hari: bangun pagi, beribadah, berolahraga, makan sehat dan bergizi, gemar belajar, bermasyarakat, dan tidur cepat', 'urutan' => 2],
+        ['nama' => 'Kegiatan Berbasis Nilai dan Kekhasan Sekolah', 'tujuan' => 'memperkuat dimensi profil lulusan sesuai visi, misi, nilai-nilai, dan karakteristik satuan pendidikan', 'urutan' => 3],
+    ];
+}
+
+function dimensi_kokurikuler(): array
+{
+    return [
+        'Keimanan & Ketakwaan' => 'keimanan dan ketakwaan terhadap Tuhan Yang Maha Esa',
+        'Kewargaan' => 'kewargaan',
+        'Penalaran Kritis' => 'penalaran kritis',
+        'Kreativitas' => 'kreativitas',
+        'Kolaborasi' => 'kolaborasi',
+        'Kemandirian' => 'kemandirian',
+        'Kesehatan' => 'kesehatan',
+        'Komunikasi' => 'komunikasi',
+    ];
+}
+
+function predikat_kokurikuler_ops(): array
+{
+    return ['' => '-', 'Berkembang' => 'Berkembang', 'Cakap' => 'Cakap', 'Mahir' => 'Mahir'];
+}
+
+function gabung_indo(array $a): string
+{
+    $a = array_values($a);
+    if (count($a) === 1) {
+        return $a[0];
+    }
+    $last = array_pop($a);
+    return implode(', ', $a) . ', dan ' . $last;
+}
+
+function generate_deskripsi_kokurikuler(array $predikat): string
+{
+    $teksDimensi = array_values(dimensi_kokurikuler());
+    $kelompok = [];
+    foreach ($teksDimensi as $i => $teks) {
+        $p = trim((string) ($predikat[$i] ?? ''));
+        if (in_array($p, ['Berkembang', 'Cakap', 'Mahir'], true)) {
+            $kelompok[$p][] = $teks;
+        }
+    }
+    if (!$kelompok) {
+        return '';
+    }
+    $baris = [];
+    foreach (['Mahir', 'Cakap', 'Berkembang'] as $p) {
+        if (!isset($kelompok[$p])) {
+            continue;
+        }
+        $baris[] = 'Pada dimensi ' . gabung_indo($kelompok[$p]) . ', ananda ' . strtolower($p) . '.';
+    }
+    return 'Pada semester ini, ananda menunjukkan capaian yang baik dalam penguatan profil lulusan melalui kegiatan kokurikuler.' . "\n" . implode("\n", $baris);
+}
+
 function daftar_cp(): array
 {
     return [

@@ -8,6 +8,7 @@ $siswaKelas = (int) scalar("SELECT COUNT(*) FROM siswa WHERE status='aktif' AND 
 $mapelRaport = mapel_raport($kelas);
 $tpCount = (int) scalar('SELECT COUNT(*) FROM tp WHERE fase=?', [$c['fase']]);
 $ekstraCount = (int) scalar('SELECT COUNT(*) FROM ekstra');
+$kokCount = (int) scalar('SELECT COUNT(*) FROM kokurikuler_kegiatan');
 
 $belum = [];
 $totalTugas = count($mapelRaport);
@@ -92,6 +93,7 @@ echo context_bar();
         <tr><td>Sekolah</td><td class="right"><b><?= e($p['sekolah']) ?></b></td></tr>
         <tr><td>NPSN</td><td class="right"><b><?= e($p['npsn']) ?></b></td></tr>
         <tr><td>Kepala Sekolah</td><td class="right"><b><?= e($p['kepsek']) ?></b></td></tr>
+        <tr><td>Kokurikuler</td><td class="right"><b><?= $kokCount ?> kegiatan</b></td></tr>
         <tr><td>Ekstrakurikuler</td><td class="right"><b><?= $ekstraCount ?> kegiatan</b></td></tr>
       </tbody>
     </table>
