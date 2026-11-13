@@ -20,6 +20,21 @@ if (!is_string($page) || !preg_match('/^[a-z_]+$/', $page)) {
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     csrf_verify();
+    if (user() && (($_POST['aksi'] ?? '') === 'switch_kelas')) {
+        $k = min(6, max(1, (int) ($_POST['kelas'] ?? 0)));
+        $old = (int) profil()['kelas_aktif'];
+        update_row('profil', ['kelas_aktif' => $k, 'fase' => fase_of($k)], 'id=?', [1]);
+        $back = $_POST['kembali'] ?? 'dashboard';
+        if (!is_string($back) || !preg_match('/^[a-z_]+$/', $back) || !menu_allowed($back)) {
+            $back = 'dashboard';
+        }
+        if ($old === $k) {
+            flash_set('success', 'Sudah berada di Kelas ' . $k . '. Seluruh data kelas tetap tersimpan dan dapat dibuka kembali kapan saja.');
+        } else {
+            flash_set('success', 'Konteks dipindah ke Kelas ' . $k . '. Data kelas sebelumnya (siswa, nilai, raport) tetap tersimpan dan dapat dibuka kembali kapan saja.');
+        }
+        redirect($back);
+    }
 }
 
 $publicPages = ['login'];

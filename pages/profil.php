@@ -29,17 +29,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('profil');
     }
 
-    if ($aksi === 'walikelas' && is_admin()) {
-        for ($k = 1; $k <= 6; $k++) {
-            $nama = trim($_POST['wk_nama_' . $k] ?? '');
-            $nip = trim($_POST['wk_nip_' . $k] ?? '');
-            if (one('SELECT kelas FROM walikelas WHERE kelas=?', [$k])) {
-                update_row('walikelas', ['nama' => $nama, 'nip' => $nip], 'kelas=?', [$k]);
-            } else {
-                insert_row('walikelas', ['kelas' => $k, 'nama' => $nama, 'nip' => $nip]);
+    if ($aksi === 'walikelas' && can_edit()) {
+        for ($s = 1; $s <= 2; $s++) {
+            for ($k = 1; $k <= 6; $k++) {
+                $nama = trim($_POST['wk_nama_' . $k . '_' . $s] ?? '');
+                $nip = trim($_POST['wk_nip_' . $k . '_' . $s] ?? '');
+                if (one('SELECT kelas FROM walikelas WHERE kelas=? AND semester=?', [$k, $s])) {
+                    update_row('walikelas', ['nama' => $nama, 'nip' => $nip], 'kelas=? AND semester=?', [$k, $s]);
+                } else {
+                    insert_row('walikelas', ['kelas' => $k, 'semester' => $s, 'nama' => $nama, 'nip' => $nip]);
+                }
             }
         }
-        flash_set('success', 'Data wali kelas tersimpan.');
+        flash_set('success', 'Data wali kelas per kelas & semester tersimpan.');
         redirect('profil');
     }
 
@@ -51,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $disabled = is_admin() ? '' : ' disabled';
+$disabledEdit = can_edit() ? '' : ' disabled';
 $c = ctx();
 page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester, kelas aktif, dan wali kelas.');
 ?>
@@ -83,7 +86,7 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
 
     <div class="card">
       <h3>Konteks Raport</h3>
-      <div class="hint mb">Seluruh input nilai dan cetak raport mengikuti konteks di bawah ini.</div>
+      <div class="hint mb">Seluruh input nilai dan cetak raport mengikuti konteks di bawah ini. Ganti kelas juga bisa lewat dropdown <b>Kelas</b> di bar atas — data kelas sebelumnya tetap tersimpan dan bisa dibuka kembali kapan saja.</div>
       <div class="form-row">
         <div class="field">
           <label>Tahun Ajaran</label>
@@ -133,28 +136,36 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
 </form>
 
 <div class="grid grid-2">
-  <form method="post" action="index.php?page=profil" data-confirm="Simpan data wali kelas seluruh tingkatan?">
+  <form method="post" action="index.php?page=profil" data-confirm="Simpan data wali kelas seluruh kelas &amp; semester?">
     <?= csrf_field() ?>
     <input type="hidden" name="aksi" value="walikelas">
     <div class="card">
       <h3>Wali Kelas (untuk tanda tangan raport)</h3>
-      <?php if (!is_admin()): ?><div class="alert alert-info">Hanya administrator yang dapat mengubah data ini.</div><?php endif; ?>
-      <div class="table-wrap">
-        <table class="tbl">
-          <thead><tr><th style="width:90px">Kelas</th><th>Nama Wali Kelas</th><th>NIP</th></tr></thead>
-          <tbody>
-          <?php for ($k = 1; $k <= 6; $k++):
-              $w = walikelas($k); ?>
-            <tr>
-              <td class="center"><b><?= $k ?></b></td>
-              <td><input type="text" name="wk_nama_<?= $k ?>" value="<?= e($w['nama']) ?>"<?= $disabled ?>></td>
-              <td><input type="text" name="wk_nip_<?= $k ?>" value="<?= e($w['nip']) ?>"<?= $disabled ?>></td>
-            </tr>
-          <?php endfor; ?>
-          </tbody>
-        </table>
-      </div>
-      <div class="mt"><button class="btn" type="submit"<?= $disabled ?>>Simpan Wali Kelas</button></div>
+      <?php if (!can_edit()): ?>
+        <div class="alert alert-info">Hanya administrator dan wali kelas yang dapat mengubah data ini.</div>
+      <?php else: ?>
+        <div class="hint mb">Diisi sendiri oleh pengguna untuk <b>setiap kelas dan semester</b>. Tanda tangan raport mengikuti kelas &amp; semester konteks. Baris <b>konteks aktif</b> ditandai.</div>
+      <?php endif; ?>
+      <?php for ($s = 1; $s <= 2; $s++): ?>
+        <h4 style="margin:14px 0 6px">Semester <?= $s ?> <?= $s === (int) $p['semester'] ? '<span class="badge badge-blue">konteks aktif</span>' : '' ?></h4>
+        <div class="table-wrap">
+          <table class="tbl">
+            <thead><tr><th style="width:90px">Kelas</th><th>Nama Wali Kelas</th><th>NIP</th></tr></thead>
+            <tbody>
+            <?php for ($k = 1; $k <= 6; $k++):
+                $w = walikelas($k, $s);
+                $aktifK = $k === (int) $p['kelas_aktif'] && $s === (int) $p['semester']; ?>
+              <tr<?= $aktifK ? ' style="background:var(--brand-soft)"' : '' ?>>
+                <td class="center"><b><?= $k ?></b><?= $aktifK ? '<div class="hint">aktif</div>' : '' ?></td>
+                <td><input type="text" name="wk_nama_<?= $k ?>_<?= $s ?>" value="<?= e($w['nama']) ?>"<?= $disabledEdit ?>></td>
+                <td><input type="text" name="wk_nip_<?= $k ?>_<?= $s ?>" value="<?= e($w['nip']) ?>"<?= $disabledEdit ?>></td>
+              </tr>
+            <?php endfor; ?>
+            </tbody>
+          </table>
+        </div>
+      <?php endfor; ?>
+      <div class="mt"><button class="btn" type="submit"<?= $disabledEdit ?>>Simpan Wali Kelas</button></div>
     </div>
   </form>
 

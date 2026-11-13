@@ -14,7 +14,7 @@ if (isset($_GET['s'])) {
 $terpilih = array_values($terpilih);
 
 $mapelList = mapel_raport($kelas);
-$walikelas = walikelas($kelas);
+$walikelas = walikelas($kelas, (int) $c['semester']);
 
 page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] . ' - Semester ' . $c['semester'] . ' - TA ' . $c['ta'],
     '<button class="btn" id="printBtn" type="button">Cetak / Simpan PDF</button>');

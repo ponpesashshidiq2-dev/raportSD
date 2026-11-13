@@ -97,3 +97,55 @@ echo context_bar();
     </table>
   </div>
 </div>
+
+<div class="card mt">
+  <h3>Semua Kelas — Data Tetap Tersimpan &amp; Bisa Dibuka Kembali</h3>
+  <div class="hint mb">Ganti kelas kapan saja lewat dropdown <b>Kelas</b> di bar atas (atau menu Profil). Data kelas lain tidak pernah terhapus — klik <b>Buka</b> untuk melihat, menginput, atau mencetak raport kelas tersebut.</div>
+  <div class="table-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th class="center" style="width:70px">Kelas</th>
+          <th class="center" style="width:70px">Fase</th>
+          <th class="center">Siswa</th>
+          <th class="center">Nilai Formatif</th>
+          <th class="center">Nilai Sumatif</th>
+          <th>Wali Kelas (Sem <?= (int) $c['semester'] ?>)</th>
+          <th style="width:130px">Status</th>
+          <th style="width:110px"></th>
+        </tr>
+      </thead>
+      <tbody>
+      <?php for ($k = 1; $k <= 6; $k++):
+          $sk = (int) scalar("SELECT COUNT(*) FROM siswa WHERE status='aktif' AND kelas=?", [$k]);
+          $nf = (int) scalar('SELECT COUNT(*) FROM nilai_formatif WHERE kelas=?', [$k]);
+          $ns = (int) scalar('SELECT COUNT(*) FROM nilai_sumatif WHERE kelas=?', [$k]);
+          $wk = walikelas($k, (int) $c['semester']);
+          $aktif = $k === $kelas; ?>
+        <tr<?= $aktif ? ' style="background:var(--brand-soft)"' : '' ?>>
+          <td class="center"><b><?= $k ?></b></td>
+          <td class="center"><?= e(fase_of($k)) ?></td>
+          <td class="center"><?= $sk ?></td>
+          <td class="center"><?= $nf ?></td>
+          <td class="center"><?= $ns ?></td>
+          <td><?= e($wk['nama'] ?: '-') ?></td>
+          <td><?= $aktif ? '<span class="badge badge-blue">Konteks Aktif</span>' : '<span class="badge badge-gray">Tersimpan</span>' ?></td>
+          <td class="right">
+            <?php if ($aktif): ?>
+              <a class="btn sm secondary" href="index.php?page=cetak">Cetak</a>
+            <?php else: ?>
+              <form method="post" action="index.php?page=dashboard" style="display:inline">
+                <?= csrf_field() ?>
+                <input type="hidden" name="aksi" value="switch_kelas">
+                <input type="hidden" name="kembali" value="dashboard">
+                <input type="hidden" name="kelas" value="<?= $k ?>">
+                <button class="btn sm" type="submit">Buka</button>
+              </form>
+            <?php endif; ?>
+          </td>
+        </tr>
+      <?php endfor; ?>
+      </tbody>
+    </table>
+  </div>
+</div>

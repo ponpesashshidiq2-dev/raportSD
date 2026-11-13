@@ -79,6 +79,17 @@ function render_layout(string $content, string $title, string $page): string
         <header class="topbar">
           <button class="btn-icon" id="toggleSidebar" type="button" aria-label="Menu">&#9776;</button>
           <div class="topbar-title"><?= e($title) ?></div>
+          <form class="class-switch" method="post" action="index.php?page=<?= e($page) ?>" title="Ganti kelas konteks — data kelas lain tetap tersimpan">
+            <?= csrf_field() ?>
+            <input type="hidden" name="aksi" value="switch_kelas">
+            <input type="hidden" name="kembali" value="<?= e($page) ?>">
+            <label for="kelasSwitch">Kelas</label>
+            <select id="kelasSwitch" name="kelas" onchange="this.form.submit()">
+              <?php for ($k = 1; $k <= 6; $k++): ?>
+                <option value="<?= $k ?>"<?= (int) $p['kelas_aktif'] === $k ? ' selected' : '' ?>><?= $k ?></option>
+              <?php endfor; ?>
+            </select>
+          </form>
           <div class="topbar-user">
             <span class="chip"><?= e(role_label($u['role'])) ?></span>
             <strong><?= e($u['nama']) ?></strong>

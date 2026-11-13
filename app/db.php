@@ -10,6 +10,7 @@ CREATE TABLE users (
   nama TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'wali',
   aktif INTEGER NOT NULL DEFAULT 1,
+  angkatan INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
 CREATE TABLE profil (
@@ -31,9 +32,11 @@ CREATE TABLE profil (
   bobot_sumatif INTEGER NOT NULL DEFAULT 60
 );
 CREATE TABLE walikelas (
-  kelas INTEGER PRIMARY KEY,
+  kelas INTEGER NOT NULL,
+  semester INTEGER NOT NULL DEFAULT 1,
   nama TEXT NOT NULL DEFAULT '',
-  nip TEXT NOT NULL DEFAULT ''
+  nip TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (kelas, semester)
 );
 CREATE TABLE mapel (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -166,7 +169,9 @@ function install_db(PDO $pdo): void
         ]);
 
     for ($k = 1; $k <= 6; $k++) {
-        $pdo->prepare('INSERT INTO walikelas (kelas, nama, nip) VALUES (?,?,?)')->execute([$k, '', '']);
+        for ($s = 1; $s <= 2; $s++) {
+            $pdo->prepare('INSERT INTO walikelas (kelas, semester, nama, nip) VALUES (?,?,?,?)')->execute([$k, $s, '', '']);
+        }
     }
 
     $mapelId = [];
@@ -205,4 +210,35 @@ function install_db(PDO $pdo): void
 function db_tables(): array
 {
     return array_map(fn($r) => $r['name'], all("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"));
+}
+
+function migrate_walikelas(PDO $pdo): void
+{
+    $cols = $pdo->query('PRAGMA table_info(walikelas)')->fetchAll(PDO::FETCH_ASSOC);
+    if (!$cols || array_filter($cols, fn($c) => ($c['name'] ?? '') === 'semester')) {
+        return;
+    }
+    $rows = $pdo->query('SELECT kelas, nama, nip FROM walikelas')->fetchAll(PDO::FETCH_ASSOC);
+    $pdo->exec('DROP TABLE walikelas');
+    $pdo->exec("CREATE TABLE walikelas (
+      kelas INTEGER NOT NULL,
+      semester INTEGER NOT NULL DEFAULT 1,
+      nama TEXT NOT NULL DEFAULT '',
+      nip TEXT NOT NULL DEFAULT '',
+      PRIMARY KEY (kelas, semester)
+    )");
+    $ins = $pdo->prepare('INSERT INTO walikelas (kelas, semester, nama, nip) VALUES (?,?,?,?)');
+    foreach ($rows as $r) {
+        for ($s = 1; $s <= 2; $s++) {
+            $ins->execute([(int) $r['kelas'], $s, $r['nama'], $r['nip']]);
+        }
+    }
+}
+
+function migrate_users(PDO $pdo): void
+{
+    $cols = $pdo->query('PRAGMA table_info(users)')->fetchAll(PDO::FETCH_ASSOC);
+    if ($cols && !array_filter($cols, fn($c) => ($c['name'] ?? '') === 'angkatan')) {
+        $pdo->exec('ALTER TABLE users ADD COLUMN angkatan INTEGER NOT NULL DEFAULT 0');
+    }
 }

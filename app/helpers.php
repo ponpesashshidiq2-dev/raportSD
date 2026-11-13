@@ -17,6 +17,8 @@ function db(): PDO
         if ($fresh || !table_exists($pdo, 'users')) {
             install_db($pdo);
         }
+        migrate_walikelas($pdo);
+        migrate_users($pdo);
     }
     return $pdo;
 }
@@ -381,9 +383,13 @@ function mapel_kelas(int $kelas): array
     );
 }
 
-function walikelas(int $kelas): array
+function walikelas(int $kelas, ?int $semester = null): array
 {
-    return one('SELECT * FROM walikelas WHERE kelas=?', [$kelas]) ?? ['kelas' => $kelas, 'nama' => '', 'nip' => ''];
+    if ($semester === null) {
+        $semester = (int) profil()['semester'];
+    }
+    return one('SELECT * FROM walikelas WHERE kelas=? AND semester=?', [$kelas, $semester])
+        ?? ['kelas' => $kelas, 'semester' => $semester, 'nama' => '', 'nip' => ''];
 }
 
 function tgl_indo(?string $date = null): string
