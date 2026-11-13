@@ -74,7 +74,8 @@ function update_row(string $table, array $data, string $where, array $wp): int
         $sets[] = $c . '=?';
     }
     $sql = 'UPDATE ' . $table . ' SET ' . implode(',', $sets) . ' WHERE ' . $where;
-    return run($sql, array_merge(array_values($data), $wp));
+    $n = substr_count($where, '?');
+    return run($sql, array_merge(array_values($data), array_slice($wp, 0, $n)));
 }
 
 function e($s): string

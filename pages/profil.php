@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $konteks['bobot_formatif'] = max(0, min(100, (int) ($_POST['bobot_formatif'] ?? 40)));
             $konteks['bobot_sumatif'] = max(0, min(100, (int) ($_POST['bobot_sumatif'] ?? 60)));
         }
-        update_row('profil', $konteks, 'id=1', [1]);
+        update_row('profil', $konteks, 'id=?', [1]);
         flash_set('success', 'Profil dan konteks raport tersimpan.');
         redirect('profil');
     }
@@ -100,7 +100,7 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
       <div class="form-row">
         <div class="field">
           <label>Kelas Aktif</label>
-          <select name="kelas_aktif">
+          <select name="kelas_aktif" onchange="var f=this.value<=2?'A':(this.value<=4?'B':'C');var s=this.form.querySelector('select[name=fase]');if(s)s.value=f;">
             <?php for ($k = 1; $k <= 6; $k++): ?>
               <option value="<?= $k ?>"<?= (int) $p['kelas_aktif'] === $k ? ' selected' : '' ?>>Kelas <?= $k ?></option>
             <?php endfor; ?>

@@ -6,7 +6,12 @@ if ($mapelId <= 0 && $mapelList) {
     $mapelId = (int) $mapelList[0]['id'];
 }
 $mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;
-$tps = $mapelId > 0 ? all('SELECT * FROM tp WHERE mapel_id=? AND fase=? ORDER BY urutan, id', [$mapelId, $c['fase']]) : [];
+$allTps = $mapelId > 0 ? all('SELECT * FROM tp WHERE mapel_id=? AND fase=? ORDER BY urutan, id', [$mapelId, $c['fase']]) : [];
+$tpSel = (int) ($_GET['tp'] ?? 0);
+if ($tpSel && !array_filter($allTps, fn($t) => (int) $t['id'] === $tpSel)) {
+    $tpSel = 0;
+}
+$tps = $tpSel ? array_values(array_filter($allTps, fn($t) => (int) $t['id'] === $tpSel)) : $allTps;
 $siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$c['kelas']]);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -16,41 +21,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $mapelId = (int) ($_POST['mapel_id'] ?? 0);
     $mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;
+    $tpFilter = (int) ($_POST['tp_filter'] ?? 0);
     if (!$mapel) {
         flash_set('error', 'Mata pelajaran tidak valid.');
         redirect('nilai_formatif');
     }
-    $tps = all('SELECT * FROM tp WHERE mapel_id=? AND fase=? ORDER BY urutan, id', [$mapelId, $c['fase']]);
-    $nilai = $_POST['nilai'] ?? [];
+    $tpList = array_column(all('SELECT * FROM tp WHERE mapel_id=? AND fase=?', [$mapelId, $c['fase']]), null, 'id');
+    $siswaList = array_column($siswas, null, 'id');
     $tersimpan = 0;
     db()->beginTransaction();
     try {
-        foreach ($tps as $t) {
-            foreach ($siswas as $s) {
-                $key = $t['id'] . '_' . $s['id'];
-                $raw = trim((string) ($nilai[$key] ?? ''));
-                $ada = one('SELECT id FROM nilai_formatif WHERE siswa_id=? AND tp_id=? AND ta=? AND semester=?',
-                    [$s['id'], $t['id'], $c['ta'], $c['semester']]);
-                if ($raw === '') {
-                    if ($ada) {
-                        run('DELETE FROM nilai_formatif WHERE id=?', [$ada['id']]);
-                    }
-                    continue;
-                }
-                $v = (float) str_replace(',', '.', $raw);
-                if ($v < 0) $v = 0;
-                if ($v > 100) $v = 100;
-                $row = ['nilai' => $v, 'kelas' => $c['kelas']];
-                if ($ada) {
-                    update_row('nilai_formatif', $row, 'id=?', [$ada['id']]);
-                } else {
-                    insert_row('nilai_formatif', $row + [
-                        'siswa_id' => $s['id'], 'tp_id' => $t['id'], 'mapel_id' => $mapelId,
-                        'ta' => $c['ta'], 'semester' => $c['semester'],
-                    ]);
-                }
-                $tersimpan++;
+        foreach (($_POST['nilai'] ?? []) as $key => $val) {
+            if (!preg_match('/^(\d+)_(\d+)$/', (string) $key, $mm)) {
+                continue;
             }
+            $tpId = (int) $mm[1];
+            $sId = (int) $mm[2];
+            if (!isset($tpList[$tpId]) || !isset($siswaList[$sId])) {
+                continue;
+            }
+            $raw = trim((string) $val);
+            $ada = one('SELECT id FROM nilai_formatif WHERE siswa_id=? AND tp_id=? AND ta=? AND semester=?',
+                [$sId, $tpId, $c['ta'], $c['semester']]);
+            if ($raw === '') {
+                if ($ada) {
+                    run('DELETE FROM nilai_formatif WHERE id=?', [$ada['id']]);
+                }
+                continue;
+            }
+            $v = (float) str_replace(',', '.', $raw);
+            if ($v < 0) $v = 0;
+            if ($v > 100) $v = 100;
+            $row = ['nilai' => $v, 'kelas' => $c['kelas']];
+            if ($ada) {
+                update_row('nilai_formatif', $row, 'id=?', [$ada['id']]);
+            } else {
+                insert_row('nilai_formatif', $row + [
+                    'siswa_id' => $sId, 'tp_id' => $tpId, 'mapel_id' => $mapelId,
+                    'ta' => $c['ta'], 'semester' => $c['semester'],
+                ]);
+            }
+            $tersimpan++;
         }
         db()->commit();
         flash_set('success', "Nilai formatif tersimpan: $tersimpan sel. Kolom yang dikosongkan akan dihapus.");
@@ -58,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->rollBack();
         flash_set('error', 'Gagal menyimpan: ' . $ex->getMessage());
     }
-    redirect('nilai_formatif', ['mapel' => $mapelId]);
+    redirect('nilai_formatif', array_filter(['mapel' => $mapelId, 'tp' => $tpFilter]));
 }
 
 page_head('Input Nilai Formatif', 'Nilai setiap Tujuan Pembelajaran (TP) per siswa pada konteks aktif.');
@@ -72,13 +83,21 @@ echo context_bar();
       <option value="<?= (int) $m['id'] ?>"<?= $mapelId === (int) $m['id'] ? ' selected' : '' ?>><?= e($m['nama']) ?></option>
     <?php endforeach; ?>
   </select>
+  <label style="margin:0">Tujuan Pembelajaran</label>
+  <select name="tp" onchange="this.form.submit()">
+    <option value="0">Semua TP (<?= count($allTps) ?>)</option>
+    <?php foreach ($allTps as $t): ?>
+      <option value="<?= (int) $t['id'] ?>"<?= $tpSel === (int) $t['id'] ? ' selected' : '' ?>><?= e($t['kode']) ?> - <?= e(mb_strimwidth($t['deskripsi'], 0, 46, '…')) ?></option>
+    <?php endforeach; ?>
+  </select>
   <span class="badge badge-blue">Fase <?= e($c['fase']) ?></span>
-  <span class="badge badge-gray"><?= count($tps) ?> TP</span>
+  <span class="badge badge-gray"><?= count($tps) ?> TP ditampilkan</span>
+  <span class="hint">Pilihan TP otomatis mengikuti mapel yang dipilih.</span>
 </form>
 
 <?php if (!$mapel): ?>
   <div class="card empty">Belum ada mata pelajaran untuk kelas <?= $c['kelas'] ?>. Tambahkan pada menu <a href="index.php?page=mapel">Mata Pelajaran</a>.</div>
-<?php elseif (!$tps): ?>
+<?php elseif (!$allTps): ?>
   <div class="alert alert-warning">Belum ada Tujuan Pembelajaran untuk mapel <b><?= e($mapel['nama']) ?></b> pada <?= e(fase_label($c['fase'])) ?>. Isi terlebih dahulu pada menu <a href="index.php?page=tp&mapel=<?= $mapelId ?>">Tujuan Pembelajaran</a>.</div>
 <?php elseif (!$siswas): ?>
   <div class="card empty">Belum ada siswa pada kelas <?= $c['kelas'] ?>. <a href="index.php?page=siswa">Tambah data siswa</a>.</div>
@@ -89,9 +108,22 @@ echo context_bar();
       $existing[$r['tp_id'] . '_' . $r['siswa_id']] = $r['nilai'];
   }
   ?>
+  <?php if ($tpSel):
+      $tpNow = null;
+      foreach ($allTps as $t) {
+          if ((int) $t['id'] === $tpSel) {
+              $tpNow = $t;
+              break;
+          }
+      } ?>
+    <?php if ($tpNow): ?>
+    <div class="alert alert-info">Menampilkan TP terpilih: <b><?= e($tpNow['kode']) ?></b> - <?= e($tpNow['deskripsi']) ?>. Pilih "Semua TP" untuk menampilkan seluruh TP mapel ini.</div>
+    <?php endif; ?>
+  <?php endif; ?>
   <form method="post" action="index.php?page=nilai_formatif">
     <?= csrf_field() ?>
     <input type="hidden" name="mapel_id" value="<?= $mapelId ?>">
+    <input type="hidden" name="tp_filter" value="<?= $tpSel ?>">
     <div class="table-wrap">
       <table class="tbl">
         <caption><?= e($mapel['nama']) ?> - Kelas <?= $c['kelas'] ?> - Semester <?= $c['semester'] ?> - <?= e($c['ta']) ?></caption>
@@ -102,7 +134,7 @@ echo context_bar();
             <?php foreach ($tps as $t): ?>
               <th class="center" title="<?= e($t['deskripsi']) ?>"><?= e($t['kode']) ?><div class="hint" style="font-weight:400;text-transform:none;letter-spacing:0"><?= e(mb_strimwidth($t['deskripsi'], 0, 42, '…')) ?></div></th>
             <?php endforeach; ?>
-            <th class="center">Rata Formatif</th>
+            <th class="center">Rata Formatif<?= $tpSel ? ' (TP ini)' : '' ?></th>
           </tr>
         </thead>
         <tbody>
@@ -127,7 +159,7 @@ echo context_bar();
     </div>
     <div class="toolbar mt">
       <button class="btn" type="submit">Simpan Nilai Formatif</button>
-      <span class="hint">Kosongkan sel untuk menghapus nilai. Rentang 0-100.</span>
+      <span class="hint">Kosongkan sel untuk menghapus nilai. Rentang 0-100. Penyimpanan hanya memengaruhi TP yang ditampilkan.</span>
     </div>
   </form>
 <?php endif; ?>
