@@ -249,7 +249,7 @@ if (isset($_GET['act']) && $_GET['act'] === 'template' && user()) {
         ['Mapel', 'Kelas', 'Semester', 'Kode', 'Deskripsi', 'Urutan'],
         ['Bahasa Indonesia', 1, 1, 'TP.A.1', 'Mengidentifikasi ide pokok dan ide penjelas pada teks informatif sederhana', 1],
         ['Matematika', 2, 2, 'TP.A.1', 'Memecahkan masalah cerita dengan operasi hitungan campuran bertingkat', 2],
-    ], [24, 8, 11, 12, 70, 9]);
+    ], [24, 8, 11, 12, 70, 9], [1 => '"1,2,3,4,5,6"', 2 => '"1,2"']);
 }
 
 $mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;

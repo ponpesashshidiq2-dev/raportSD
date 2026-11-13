@@ -125,7 +125,7 @@ function csv_read(string $path): array
     return $rows;
 }
 
-function xlsx_download(string $filename, array $rows, array $widths = []): void
+function xlsx_download(string $filename, array $rows, array $widths = [], array $dropdowns = []): void
 {
     $zip = new ZipArchive();
     $tmp = tempnam(sys_get_temp_dir(), 'xlsx');
@@ -137,6 +137,7 @@ function xlsx_download(string $filename, array $rows, array $widths = []): void
 <Default Extension="xml" ContentType="application/xml"/>
 <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
 <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
 </Types>');
 
     $zip->addFromString('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -152,34 +153,73 @@ function xlsx_download(string $filename, array $rows, array $widths = []): void
     $zip->addFromString('xl/_rels/workbook.xml.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
 <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 </Relationships>');
 
+    $zip->addFromString('xl/styles.xml', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="2">
+<font><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/></font>
+<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font>
+</fonts>
+<fills count="3">
+<fill><patternFill patternType="none"/></fill>
+<fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF44546A"/><bgColor indexed="64"/></patternFill></fill>
+</fills>
+<borders count="2">
+<border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color rgb="FF9E9E9E"/></left><right style="thin"><color rgb="FF9E9E9E"/></right><top style="thin"><color rgb="FF9E9E9E"/></top><bottom style="thin"><color rgb="FF9E9E9E"/></bottom><diagonal/></border>
+</borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="3">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+</styleSheet>');
+
     $sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
-    $rNum = 0;
-    foreach ($rows as $row) {
-        $rNum++;
-        $sheet .= '<row r="' . $rNum . '">';
-        $cNum = 0;
-        foreach ($row as $val) {
-            $ref = xlsx_num_to_col($cNum) . $rNum;
-            $isNum = is_int($val) || is_float($val);
-            if ($isNum) {
-                $sheet .= '<c r="' . $ref . '"><v>' . $val . '</v></c>';
-            } else {
-                $sheet .= '<c r="' . $ref . '" t="inlineStr"><is><t>' . xlsx_esc((string) $val) . '</t></is></c>';
-            }
-            $cNum++;
-        }
-        $sheet .= '</row>';
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
+    if ($rows) {
+        $sheet .= '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A2" sqref="A2"/></sheetView></sheetViews>';
     }
-    $sheet .= '</sheetData>';
     if ($widths) {
         $sheet .= '<cols>';
         foreach ($widths as $i => $w) {
             $sheet .= '<col min="' . ($i + 1) . '" max="' . ($i + 1) . '" width="' . $w . '" customWidth="1"/>';
         }
         $sheet .= '</cols>';
+    }
+    $sheet .= '<sheetData>';
+    $rNum = 0;
+    foreach ($rows as $row) {
+        $rNum++;
+        $style = $rNum === 1 ? 1 : 2;
+        $sheet .= '<row r="' . $rNum . '"' . ($rNum === 1 ? ' ht="22" customHeight="1"' : '') . '>';
+        $cNum = 0;
+        foreach ($row as $val) {
+            $ref = xlsx_num_to_col($cNum) . $rNum;
+            $isNum = is_int($val) || is_float($val);
+            if ($isNum) {
+                $sheet .= '<c r="' . $ref . '" s="' . $style . '"><v>' . $val . '</v></c>';
+            } else {
+                $sheet .= '<c r="' . $ref . '" s="' . $style . '" t="inlineStr"><is><t>' . xlsx_esc((string) $val) . '</t></is></c>';
+            }
+            $cNum++;
+        }
+        $sheet .= '</row>';
+    }
+    $sheet .= '</sheetData>';
+    if ($dropdowns) {
+        $sheet .= '<dataValidations count="' . count($dropdowns) . '">';
+        foreach ($dropdowns as $col => $list) {
+            $colName = xlsx_num_to_col((int) $col);
+            $sqref = $colName . '2:' . $colName . '100000';
+            $sheet .= '<dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" errorStyle="stop" errorTitle="Nilai tidak valid" error="Nilai harus sesuai daftar yang disediakan." promptTitle="Pilihan" prompt="Pilih nilai dari daftar." sqref="' . $sqref . '"><formula1>' . xlsx_esc($list) . '</formula1></dataValidation>';
+        }
+        $sheet .= '</dataValidations>';
     }
     $sheet .= '</worksheet>';
     $zip->addFromString('xl/worksheets/sheet1.xml', $sheet);
