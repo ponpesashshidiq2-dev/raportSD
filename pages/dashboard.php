@@ -6,7 +6,7 @@ $kelas = $c['kelas'];
 $totalSiswa = (int) scalar("SELECT COUNT(*) FROM siswa WHERE status='aktif'");
 $siswaKelas = (int) scalar("SELECT COUNT(*) FROM siswa WHERE status='aktif' AND kelas=?", [$kelas]);
 $mapelRaport = mapel_raport($kelas);
-$tpCount = (int) scalar('SELECT COUNT(*) FROM tp WHERE fase=?', [$c['fase']]);
+$tpCount = (int) scalar('SELECT COUNT(*) FROM tp WHERE kelas=? AND semester=?', [$c['kelas'], $c['semester']]);
 $ekstraCount = (int) scalar('SELECT COUNT(*) FROM ekstra');
 $kokCount = (int) scalar('SELECT COUNT(*) FROM kokurikuler_kegiatan');
 
@@ -43,7 +43,7 @@ echo context_bar();
   <div class="stat warn">
     <div class="stat-k">Tujuan Pembelajaran</div>
     <div class="stat-v"><?= $tpCount ?></div>
-    <div class="stat-s">Untuk <?= e($c['fase']) ?></div>
+    <div class="stat-s">Kelas <?= $kelas ?> - Semester <?= $c['semester'] ?></div>
   </div>
   <div class="stat <?= $pct < 100 ? 'danger' : '' ?>">
     <div class="stat-k">Progres Nilai</div>

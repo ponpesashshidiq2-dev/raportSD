@@ -122,14 +122,14 @@ echo context_bar();
           </thead>
           <tbody>
           <?php $no = 0; foreach ($list as $m): $no++;
-              $tpN = (int) scalar('SELECT COUNT(*) FROM tp WHERE mapel_id=? AND fase=?', [$m['id'], $c['fase']]);
+              $tpN = (int) scalar('SELECT COUNT(*) FROM tp WHERE mapel_id=? AND kelas=? AND semester=?', [$m['id'], $c['kelas'], $c['semester']]);
               $adaKkm = $m['kkm'] !== null && $m['kkm'] !== ''; ?>
             <tr>
               <td class="center"><?= $no ?></td>
               <td class="name-cell"><?= e($m['nama']) ?></td>
               <td class="center"><?= $adaKkm ? '<b>' . (int) $m['kkm'] . '</b>' : '<span class="badge badge-gray">-</span>' ?></td>
               <td class="center"><?= (int) $m['kelas_min'] ?>-<?= (int) $m['kelas_max'] ?></td>
-              <td class="center"><?= $tpN ?><div class="hint"><?= e($c['fase']) ?></div></td>
+              <td class="center"><?= $tpN ?><div class="hint">Kls <?= (int) $c['kelas'] ?> / Sem <?= (int) $c['semester'] ?></div></td>
               <td class="center"><?= $adaKkm ? '<span class="badge badge-green">Ya</span>' : '<span class="badge badge-amber">Tidak</span>' ?></td>
               <td class="center"><?= $m['aktif'] ? '<span class="badge badge-blue">Aktif</span>' : '<span class="badge badge-gray">Nonaktif</span>' ?></td>
               <?php if (is_admin()): ?>

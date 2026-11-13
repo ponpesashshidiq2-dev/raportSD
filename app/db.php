@@ -59,6 +59,8 @@ CREATE TABLE tp (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   mapel_id INTEGER NOT NULL,
   fase TEXT NOT NULL,
+  kelas INTEGER NOT NULL DEFAULT 1,
+  semester INTEGER NOT NULL DEFAULT 1,
   kode TEXT NOT NULL DEFAULT '',
   deskripsi TEXT NOT NULL,
   urutan INTEGER NOT NULL DEFAULT 0
@@ -171,6 +173,7 @@ CREATE INDEX idx_nf_mapel ON nilai_formatif (mapel_id, ta, semester);
 CREATE INDEX idx_ns_mapel ON nilai_sumatif (mapel_id, ta, semester);
 CREATE INDEX idx_siswa_kelas ON siswa (kelas, status);
 CREATE INDEX idx_tp_mapel ON tp (mapel_id, fase);
+CREATE INDEX idx_tp_ctx ON tp (mapel_id, kelas, semester);
 SQL;
 }
 
@@ -223,12 +226,16 @@ function install_db(PDO $pdo): void
     }
 
     $tp = daftar_tp();
-    $stmt = $pdo->prepare('INSERT INTO tp (mapel_id, fase, kode, deskripsi, urutan) VALUES (?,?,?,?,?)');
+    $stmt = $pdo->prepare('INSERT INTO tp (mapel_id, fase, kelas, semester, kode, deskripsi, urutan) VALUES (?,?,?,?,?,?,?)');
     foreach ($tp as $nama => $fases) {
         foreach ($fases as $fase => $list) {
-            $i = 0;
-            foreach ($list as $desc) {
-                $stmt->execute([$mapelId[$nama], $fase, 'TP.' . $fase . '.' . (++$i), $desc, $i]);
+            foreach (kelas_of_fase($fase) as $k) {
+                for ($s = 1; $s <= 2; $s++) {
+                    $i = 0;
+                    foreach ($list as $desc) {
+                        $stmt->execute([$mapelId[$nama], $fase, $k, $s, 'TP.' . $fase . '.' . (++$i), $desc, $i]);
+                    }
+                }
             }
         }
     }
@@ -323,6 +330,52 @@ function migrate_kokurikuler(PDO $pdo): void
         $stmt = $pdo->prepare('INSERT INTO kokurikuler_kegiatan (nama, tujuan, urutan) VALUES (?,?,?)');
         foreach (daftar_kokurikuler() as $kk) {
             $stmt->execute([$kk['nama'], $kk['tujuan'], $kk['urutan']]);
+        }
+    }
+}
+
+function migrate_tp_kelas(PDO $pdo): void
+{
+    $cols = $pdo->query('PRAGMA table_info(tp)')->fetchAll(PDO::FETCH_ASSOC);
+    if (!$cols || array_filter($cols, fn($c) => ($c['name'] ?? '') === 'semester')) {
+        return;
+    }
+    $pdo->exec('ALTER TABLE tp ADD COLUMN kelas INTEGER NOT NULL DEFAULT 0');
+    $pdo->exec('ALTER TABLE tp ADD COLUMN semester INTEGER NOT NULL DEFAULT 1');
+    $pdo->exec('CREATE INDEX IF NOT EXISTS idx_tp_ctx ON tp (mapel_id, kelas, semester)');
+
+    $profil = $pdo->query('SELECT kelas_aktif FROM profil WHERE id=1')->fetch();
+    $aktif = $profil ? (int) $profil['kelas_aktif'] : 1;
+
+    $upd = $pdo->prepare('UPDATE tp SET kelas=?, semester=1 WHERE id=?');
+    $ins = $pdo->prepare('INSERT INTO tp (mapel_id, fase, kelas, semester, kode, deskripsi, urutan) VALUES (?,?,?,?,?,?,?)');
+    foreach ($pdo->query('SELECT * FROM tp WHERE kelas=0 ORDER BY id')->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        $fase = $r['fase'];
+        $kelasAsal = fase_of($aktif) === $fase ? $aktif : kelas_of_fase($fase)[0];
+        $upd->execute([$kelasAsal, $r['id']]);
+        foreach (kelas_of_fase($fase) as $k) {
+            for ($s = 1; $s <= 2; $s++) {
+                if ($k === $kelasAsal && $s === 1) {
+                    continue;
+                }
+                $ins->execute([$r['mapel_id'], $fase, $k, $s, $r['kode'], $r['deskripsi'], (int) $r['urutan']]);
+            }
+        }
+    }
+
+    $get = $pdo->prepare('SELECT mapel_id, fase, kelas, kode FROM tp WHERE id=?');
+    $find = $pdo->prepare('SELECT id FROM tp WHERE mapel_id=? AND fase=? AND kelas=? AND semester=2 AND kode=?');
+    $updNf = $pdo->prepare('UPDATE nilai_formatif SET tp_id=? WHERE tp_id=? AND semester=2');
+    foreach ($pdo->query('SELECT DISTINCT tp_id FROM nilai_formatif WHERE semester=2')->fetchAll(PDO::FETCH_COLUMN) as $tpid) {
+        $get->execute([(int) $tpid]);
+        $src = $get->fetch();
+        if (!$src) {
+            continue;
+        }
+        $find->execute([$src['mapel_id'], $src['fase'], $src['kelas'], $src['kode']]);
+        $new = $find->fetchColumn();
+        if ($new && (int) $new !== (int) $tpid) {
+            $updNf->execute([(int) $new, (int) $tpid]);
         }
     }
 }

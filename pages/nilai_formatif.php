@@ -6,7 +6,7 @@ if ($mapelId <= 0 && $mapelList) {
     $mapelId = (int) $mapelList[0]['id'];
 }
 $mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;
-$allTps = $mapelId > 0 ? all('SELECT * FROM tp WHERE mapel_id=? AND fase=? ORDER BY urutan, id', [$mapelId, $c['fase']]) : [];
+$allTps = $mapelId > 0 ? all('SELECT * FROM tp WHERE mapel_id=? AND kelas=? AND semester=? ORDER BY urutan, id', [$mapelId, $c['kelas'], $c['semester']]) : [];
 $tpSel = (int) ($_GET['tp'] ?? 0);
 if ($tpSel && !array_filter($allTps, fn($t) => (int) $t['id'] === $tpSel)) {
     $tpSel = 0;
@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash_set('error', 'Mata pelajaran tidak valid.');
         redirect('nilai_formatif');
     }
-    $tpList = array_column(all('SELECT * FROM tp WHERE mapel_id=? AND fase=?', [$mapelId, $c['fase']]), null, 'id');
+    $tpList = array_column(all('SELECT * FROM tp WHERE mapel_id=? AND kelas=? AND semester=?', [$mapelId, $c['kelas'], $c['semester']]), null, 'id');
     $siswaList = array_column($siswas, null, 'id');
     $tersimpan = 0;
     db()->beginTransaction();
@@ -90,7 +90,7 @@ echo context_bar();
       <option value="<?= (int) $t['id'] ?>"<?= $tpSel === (int) $t['id'] ? ' selected' : '' ?>><?= e($t['kode']) ?> - <?= e(mb_strimwidth($t['deskripsi'], 0, 46, '…')) ?></option>
     <?php endforeach; ?>
   </select>
-  <span class="badge badge-blue">Fase <?= e($c['fase']) ?></span>
+  <span class="badge badge-blue">Kelas <?= $c['kelas'] ?> - Semester <?= $c['semester'] ?></span>
   <span class="badge badge-gray"><?= count($tps) ?> TP ditampilkan</span>
   <span class="hint">Pilihan TP otomatis mengikuti mapel yang dipilih.</span>
 </form>
@@ -98,7 +98,7 @@ echo context_bar();
 <?php if (!$mapel): ?>
   <div class="card empty">Belum ada mata pelajaran untuk kelas <?= $c['kelas'] ?>. Tambahkan pada menu <a href="index.php?page=mapel">Mata Pelajaran</a>.</div>
 <?php elseif (!$allTps): ?>
-  <div class="alert alert-warning">Belum ada Tujuan Pembelajaran untuk mapel <b><?= e($mapel['nama']) ?></b> pada <?= e(fase_label($c['fase'])) ?>. Isi terlebih dahulu pada menu <a href="index.php?page=tp&mapel=<?= $mapelId ?>">Tujuan Pembelajaran</a>.</div>
+  <div class="alert alert-warning">Belum ada Tujuan Pembelajaran untuk mapel <b><?= e($mapel['nama']) ?></b> pada Kelas <?= $c['kelas'] ?> Semester <?= $c['semester'] ?>. Isi terlebih dahulu pada menu <a href="index.php?page=tp&mapel=<?= $mapelId ?>&kelas=<?= $c['kelas'] ?>&sem=<?= $c['semester'] ?>">Tujuan Pembelajaran</a>.</div>
 <?php elseif (!$siswas): ?>
   <div class="card empty">Belum ada siswa pada kelas <?= $c['kelas'] ?>. <a href="index.php?page=siswa">Tambah data siswa</a>.</div>
 <?php else:

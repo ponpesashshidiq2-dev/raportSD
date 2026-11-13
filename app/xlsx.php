@@ -65,14 +65,14 @@ function xlsx_read(string $path, string $originalName = ''): array
             $inner = $reader->readInnerXML();
             if ($type === 's') {
                 $v = '';
-                if (preg_match('#<v>(.*?)</v>#s', $inner, $m)) {
+                if (preg_match('#<v(?:\s[^>]*)?>(.*?)</v>#s', $inner, $m)) {
                     $v = $m[1];
                 }
                 $value = $shared[(int) $v] ?? '';
             } elseif ($type === 'inlineStr') {
                 $value = preg_match('#<t[^>]*>(.*?)</t>#s', $inner, $m) ? html_entity_decode($m[1], ENT_QUOTES) : '';
             } else {
-                $value = preg_match('#<v>(.*?)</v>#s', $inner, $m) ? $m[1] : '';
+                $value = preg_match('#<v(?:\s[^>]*)?>(.*?)</v>#s', $inner, $m) ? $m[1] : '';
             }
             $rows[$rowIndex][$colIndex] = $value;
             $colIndex++;

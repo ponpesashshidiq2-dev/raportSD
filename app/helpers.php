@@ -21,6 +21,7 @@ function db(): PDO
         migrate_users($pdo);
         migrate_catatan_wali($pdo);
         migrate_kokurikuler($pdo);
+        migrate_tp_kelas($pdo);
     }
     return $pdo;
 }
@@ -261,6 +262,13 @@ function fase_of(int $kelas): string
     if ($kelas <= 2) return 'A';
     if ($kelas <= 4) return 'B';
     return 'C';
+}
+
+function kelas_of_fase(string $fase): array
+{
+    if ($fase === 'B') return [3, 4];
+    if ($fase === 'C') return [5, 6];
+    return [1, 2];
 }
 
 function fase_label(string $f): string
