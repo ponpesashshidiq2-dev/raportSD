@@ -1,5 +1,9 @@
 <?php
 $c = ctx();
+$kaKunci = kelas_angkatan();
+if ($kaKunci !== null) {
+    $c['kelas'] = $kaKunci;
+}
 $siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$c['kelas']]);
 $ekstraList = all('SELECT * FROM ekstra ORDER BY urutan, nama');
 $predikatOps = ['' => '-', 'A' => 'A (Sangat Baik)', 'B' => 'B (Baik)', 'C' => 'C (Cukup)', 'D' => 'D (Kurang)'];
@@ -90,7 +94,8 @@ foreach ($ekstraList as $ek) {
 }
 
 page_head('Input Nilai Ekstrakurikuler', 'Siswa hanya menampilkan kegiatan yang nilainya diisi pada raport.');
-echo context_bar();
+echo context_bar($kaKunci);
+echo angkatan_lock_alert();
 if (!$ekstraList): ?>
   <div class="alert alert-warning">Belum ada kegiatan. Tambahkan pada menu <a href="index.php?page=ekstra">Ekstrakurikuler</a>.</div>
 <?php elseif (!$siswas): ?>

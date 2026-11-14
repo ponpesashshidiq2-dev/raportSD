@@ -1,5 +1,9 @@
 <?php
 $c = ctx();
+$kaKunci = kelas_angkatan();
+if ($kaKunci !== null) {
+    $c['kelas'] = $kaKunci;
+}
 $siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$c['kelas']]);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -46,7 +50,8 @@ foreach (all('SELECT siswa_id, teks FROM catatan_wali WHERE ta=? AND semester=?'
 
 page_head('Catatan Wali Kelas',
     'Catatan perkembangan per siswa semester ini — tampil pada kotak "Catatan Wali Kelas" di raport cetak dan menjadi dasar penilaian Perkembangan pada KEPUTUSAN semester 2.');
-echo context_bar();
+echo context_bar($kaKunci);
+echo angkatan_lock_alert();
 if (!$siswas): ?>
   <div class="card empty">Belum ada siswa pada kelas <?= $c['kelas'] ?>. <a href="index.php?page=siswa">Tambah data siswa</a>.</div>
 <?php else: ?>

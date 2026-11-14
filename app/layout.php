@@ -147,9 +147,13 @@ function render_auth(string $content, string $title): string
     return ob_get_clean();
 }
 
-function context_bar(): string
+function context_bar(?int $pinKelas = null): string
 {
     $c = ctx();
+    if ($pinKelas !== null) {
+        $c['kelas'] = $pinKelas;
+        $c['fase'] = fase_of($pinKelas);
+    }
     return '<div class="ctx-bar"><span class="ctx-item"><b>Kelas</b> ' . $c['kelas'] . '</span>'
         . '<span class="ctx-item"><b>Fase</b> ' . e($c['fase']) . '</span>'
         . '<span class="ctx-item"><b>Semester</b> ' . $c['semester'] . '</span>'

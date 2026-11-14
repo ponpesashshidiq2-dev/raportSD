@@ -1,5 +1,9 @@
 <?php
 $c = ctx();
+$kaKunci = kelas_angkatan();
+if ($kaKunci !== null) {
+    $c['kelas'] = $kaKunci;
+}
 $mapelList = mapel_kelas($c['kelas']);
 $mapelId = (int) ($_GET['mapel'] ?? 0);
 if ($mapelId <= 0 && $mapelList) {
@@ -104,7 +108,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 page_head('Input Nilai Formatif', 'Nilai setiap Tujuan Pembelajaran (TP) per siswa pada konteks aktif.');
-echo context_bar();
+echo context_bar($kaKunci);
+echo angkatan_lock_alert();
 ?>
 <form class="toolbar" method="get" action="index.php">
   <input type="hidden" name="page" value="nilai_formatif">

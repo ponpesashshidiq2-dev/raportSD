@@ -270,6 +270,33 @@ function fase_of(int $kelas): string
     return 'C';
 }
 
+function kelas_angkatan(): ?int
+{
+    $u = user();
+    if (!$u) {
+        return null;
+    }
+    $ang = (int) ($u['angkatan'] ?? 0);
+    if ($ang <= 0) {
+        return null;
+    }
+    $taStart = (int) substr((string) (ctx()['ta'] ?? ''), 0, 4);
+    return $taStart - $ang + 1;
+}
+
+function angkatan_lock_alert(): string
+{
+    $ka = kelas_angkatan();
+    if ($ka === null) {
+        return '';
+    }
+    $ang = (int) (user()['angkatan'] ?? 0);
+    if ($ka >= 1 && $ka <= 6) {
+        return '<div class="alert alert-info">Akun ini terkunci ke <b>angkatan ' . $ang . '</b> (Kelas ' . $ka . ') — daftar siswa input nilai tetap sama walau kelas/semester diganti.</div>';
+    }
+    return '<div class="alert alert-warning">Akun ini terkunci ke <b>angkatan ' . $ang . '</b>, tetapi kelas angkatan di luar 1-6 sehingga tidak ada siswa yang cocok. Periksa tahun angkatan pada menu <a href="index.php?page=siswa">Data Siswa</a>.</div>';
+}
+
 function kelas_of_fase(string $fase): array
 {
     if ($fase === 'B') return [3, 4];

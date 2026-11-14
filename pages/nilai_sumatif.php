@@ -1,5 +1,9 @@
 <?php
 $c = ctx();
+$kaKunci = kelas_angkatan();
+if ($kaKunci !== null) {
+    $c['kelas'] = $kaKunci;
+}
 $mapelList = mapel_kelas($c['kelas']);
 $mapelId = (int) ($_GET['mapel'] ?? 0);
 if ($mapelId <= 0 && $mapelList) {
@@ -92,7 +96,8 @@ $jenisList = $mapelId > 0 ? all('SELECT * FROM sumatif_jenis WHERE mapel_id=? AN
     [$mapelId, $c['ta'], $c['semester']]) : [];
 
 page_head('Input Nilai Sumatif', 'Buat penilaian sumatif (mis. harian, tengah semester, akhir semester) lalu isi nilainya.');
-echo context_bar();
+echo context_bar($kaKunci);
+echo angkatan_lock_alert();
 ?>
 <form class="toolbar" method="get" action="index.php">
   <input type="hidden" name="page" value="nilai_sumatif">
