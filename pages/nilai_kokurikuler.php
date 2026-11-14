@@ -169,8 +169,8 @@ if (!$siswas): ?>
               </td>
             <?php endforeach; ?>
             <td>
-              <textarea name="desk[<?= $sid ?>]" rows="3" style="width:100%;min-width:280px" placeholder="otomatis terisi saat Simpan Semua mengikuti predikat — boleh disunting manual"><?= e($cap['deskripsi']) ?></textarea>
-              <button class="btn sm secondary" type="submit" name="generate" value="<?= $sid ?>" title="Generate deskripsi siswa ini dari predikat" style="margin-top:4px">Generate</button>
+              <textarea name="desk[<?= $sid ?>]" rows="3" style="width:100%;min-width:280px" placeholder="otomatis terisi saat Simpan mengikuti predikat — boleh disunting manual"><?= e($cap['deskripsi']) ?></textarea>
+              <button class="btn sm secondary" type="submit" name="generate" value="<?= $sid ?>" title="Generate deskripsi siswa ini dari predikat (mengganti teks manual)" style="margin-top:4px">Generate</button>
             </td>
           </tr>
         <?php endforeach; ?>
@@ -180,10 +180,9 @@ if (!$siswas): ?>
   </div>
 
   <div class="toolbar mt">
-    <button class="btn" type="submit">Simpan Semua</button>
-    <button class="btn secondary" type="submit" name="generate" value="all">Generate Semua Deskripsi dari Predikat</button>
-    <span class="hint">Pilih <b>-</b> untuk menghapus predikat. Tekan <b>Simpan Semua</b> — Deskripsi yang tidak diedit manual otomatis
-      digenerate ulang mengikuti predikat & keterangan dimensi terbaru sehingga selalu sama dengan rapor.</span>
+    <button class="btn" type="submit">Simpan</button>
+    <span class="hint">Pilih <b>-</b> untuk menghapus predikat. Tekan <b>Simpan</b> — Deskripsi yang tidak diedit manual otomatis
+      digenerate ulang mengikuti predikat & keterangan dimensi terbaru sehingga selalu sama dengan rapor; teks manual tetap dipertahankan.</span>
   </div>
 </form>
 <?php endif; ?>
