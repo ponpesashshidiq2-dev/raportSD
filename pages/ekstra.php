@@ -28,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($aksi === 'hapus') {
         $id = (int) ($_POST['id'] ?? 0);
         run('DELETE FROM nilai_ekstra WHERE ekstra_id=?', [$id]);
+        run('DELETE FROM ekstra_deskripsi WHERE ekstra_id=?', [$id]);
         run('DELETE FROM ekstra WHERE id=?', [$id]);
         flash_set('success', 'Kegiatan beserta nilainya dihapus.');
         redirect('ekstra');

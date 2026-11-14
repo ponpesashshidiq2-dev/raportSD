@@ -46,6 +46,12 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
   <div class="card empty">Tidak ada siswa dipilih.</div>
 <?php endif; ?>
 
+<?php $ekDeskMap = [];
+foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND semester=? AND kelas=?',
+    [$c['ta'], $c['semester'], $kelas]) as $r) {
+    $ekDeskMap[(int) $r['ekstra_id']] = $r['deskripsi'];
+} ?>
+
 <?php foreach ($terpilih as $s):
     $sid = (int) $s['id'];
     $romawi = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
@@ -56,7 +62,7 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
         $arrPred = json_decode($capaianKok['predikat'] ?? '[]', true) ?: [];
         $deskKok = generate_deskripsi_kokurikuler($arrPred, $s['nama']);
     }
-    $nilaiEkstra = all('SELECT e.nama, n.predikat, n.catatan FROM nilai_ekstra n JOIN ekstra e ON e.id=n.ekstra_id
+    $nilaiEkstra = all('SELECT e.id AS eid, e.nama, n.predikat, n.catatan FROM nilai_ekstra n JOIN ekstra e ON e.id=n.ekstra_id
         WHERE n.siswa_id=? AND n.ta=? AND n.semester=? ORDER BY e.urutan, e.nama', [$sid, $c['ta'], $c['semester']]);
     $hadir = one('SELECT * FROM kehadiran WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']]);
     $catatanTeks = (one('SELECT teks FROM catatan_wali WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']])['teks'] ?? '');
@@ -137,8 +143,12 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
   <table class="rp-tbl" style="max-width:100%">
     <thead><tr><th style="width:42px">No</th><th style="width:34%">Kegiatan</th><th style="width:110px">Predikat</th><th>Deskripsi</th></tr></thead>
     <tbody>
-      <?php $ne = 0; foreach ($nilaiEkstra as $ek): $ne++; ?>
-        <tr><td class="no"><?= $ne ?></td><td><?= e($ek['nama']) ?></td><td class="nilai"><?= e($ek['predikat']) ?></td><td><?= e($ek['catatan']) ?></td></tr>
+      <?php $ne = 0; foreach ($nilaiEkstra as $ek): $ne++;
+          $deskEk = trim($ekDeskMap[(int) $ek['eid']] ?? '');
+          if ($deskEk === '') {
+              $deskEk = (string) $ek['catatan'];
+          } ?>
+        <tr><td class="no"><?= $ne ?></td><td><?= e($ek['nama']) ?></td><td class="nilai"><?= e($ek['predikat']) ?></td><td><?= e($deskEk) ?></td></tr>
       <?php endforeach; ?>
     </tbody>
   </table>

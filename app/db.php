@@ -142,6 +142,14 @@ CREATE TABLE nilai_ekstra (
   catatan TEXT NOT NULL DEFAULT '',
   UNIQUE (siswa_id, ekstra_id, ta, semester)
 );
+CREATE TABLE ekstra_deskripsi (
+  ekstra_id INTEGER NOT NULL,
+  ta TEXT NOT NULL,
+  semester INTEGER NOT NULL,
+  kelas INTEGER NOT NULL,
+  deskripsi TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (ekstra_id, ta, semester, kelas)
+);
 CREATE TABLE kehadiran (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   siswa_id INTEGER NOT NULL,
@@ -331,6 +339,18 @@ function migrate_catatan_wali(PDO $pdo): void
       semester INTEGER NOT NULL,
       teks TEXT NOT NULL DEFAULT '',
       UNIQUE (siswa_id, ta, semester)
+    )");
+}
+
+function migrate_ekstra_deskripsi(PDO $pdo): void
+{
+    $pdo->exec("CREATE TABLE IF NOT EXISTS ekstra_deskripsi (
+      ekstra_id INTEGER NOT NULL,
+      ta TEXT NOT NULL,
+      semester INTEGER NOT NULL,
+      kelas INTEGER NOT NULL,
+      deskripsi TEXT NOT NULL DEFAULT '',
+      PRIMARY KEY (ekstra_id, ta, semester, kelas)
     )");
 }
 
