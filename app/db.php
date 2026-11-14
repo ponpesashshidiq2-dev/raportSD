@@ -79,6 +79,21 @@ CREATE TABLE siswa (
   kelas INTEGER NOT NULL DEFAULT 1,
   rombel TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL DEFAULT 'aktif',
+  kode_agama TEXT NOT NULL DEFAULT '',
+  agama TEXT NOT NULL DEFAULT '',
+  pendidikan_sebelumnya TEXT NOT NULL DEFAULT '',
+  ayah TEXT NOT NULL DEFAULT '',
+  ibu TEXT NOT NULL DEFAULT '',
+  kerja_ayah TEXT NOT NULL DEFAULT '',
+  kerja_ibu TEXT NOT NULL DEFAULT '',
+  ortu_jalan TEXT NOT NULL DEFAULT '',
+  ortu_kelurahan TEXT NOT NULL DEFAULT '',
+  ortu_kecamatan TEXT NOT NULL DEFAULT '',
+  ortu_kota TEXT NOT NULL DEFAULT '',
+  ortu_provinsi TEXT NOT NULL DEFAULT '',
+  wali_nama TEXT NOT NULL DEFAULT '',
+  wali_kerja TEXT NOT NULL DEFAULT '',
+  wali_alamat TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
 CREATE TABLE nilai_formatif (
@@ -284,6 +299,25 @@ function migrate_users(PDO $pdo): void
     $cols = $pdo->query('PRAGMA table_info(users)')->fetchAll(PDO::FETCH_ASSOC);
     if ($cols && !array_filter($cols, fn($c) => ($c['name'] ?? '') === 'angkatan')) {
         $pdo->exec('ALTER TABLE users ADD COLUMN angkatan INTEGER NOT NULL DEFAULT 0');
+    }
+}
+
+function migrate_siswa_detail(PDO $pdo): void
+{
+    $cols = array_map(fn($c) => $c['name'], $pdo->query('PRAGMA table_info(siswa)')->fetchAll(PDO::FETCH_ASSOC));
+    if (!$cols) {
+        return;
+    }
+    $add = [
+        'kode_agama', 'agama', 'pendidikan_sebelumnya',
+        'ayah', 'ibu', 'kerja_ayah', 'kerja_ibu',
+        'ortu_jalan', 'ortu_kelurahan', 'ortu_kecamatan', 'ortu_kota', 'ortu_provinsi',
+        'wali_nama', 'wali_kerja', 'wali_alamat',
+    ];
+    foreach ($add as $c) {
+        if (!in_array($c, $cols, true)) {
+            $pdo->exec("ALTER TABLE siswa ADD COLUMN $c TEXT NOT NULL DEFAULT ''");
+        }
     }
 }
 

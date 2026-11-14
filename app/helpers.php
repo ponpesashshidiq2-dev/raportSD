@@ -19,6 +19,7 @@ function db(): PDO
         }
         migrate_walikelas($pdo);
         migrate_users($pdo);
+        migrate_siswa_detail($pdo);
         migrate_catatan_wali($pdo);
         migrate_kokurikuler($pdo);
         migrate_tp_kelas($pdo);
