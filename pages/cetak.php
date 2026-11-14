@@ -141,16 +141,19 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
   <?php if ($nilaiEkstra): ?>
   <div class="rp-section-title">Ekstrakurikuler</div>
   <table class="rp-tbl" style="max-width:100%">
-    <thead><tr><th style="width:42px">No</th><th style="width:34%">Kegiatan</th><th style="width:110px">Predikat</th><th>Deskripsi</th></tr></thead>
+    <thead><tr><th style="width:42px">No</th><th style="width:34%">Kegiatan</th><th>Keterangan</th></tr></thead>
     <tbody>
       <?php $ne = 0; foreach ($nilaiEkstra as $ek): $ne++;
           $deskEk = trim($ekDeskMap[(int) $ek['eid']] ?? '');
           if ($deskEk === '') {
               $deskEk = trim((string) $ek['catatan']);
           }
-          $ketEk = e($s['nama']) . ' memperoleh predikat ' . e($ek['predikat'])
+          $pEk = strtoupper(trim((string) $ek['predikat']));
+          $kataEk = ['A' => 'sangat baik', 'B' => 'Baik', 'C' => 'Cukup', 'D' => 'Kurang'][$pEk]
+              ?? ($pEk !== '' ? 'memperoleh predikat ' . e($ek['predikat']) : '');
+          $ketEk = e($s['nama']) . ($kataEk !== '' ? ' ' . $kataEk : '')
               . ($deskEk !== '' ? ' ' . e($deskEk) : '.'); ?>
-        <tr><td class="no"><?= $ne ?></td><td><?= e($ek['nama']) ?></td><td class="nilai"><?= e($ek['predikat']) ?></td><td><?= $ketEk ?></td></tr>
+        <tr><td class="no"><?= $ne ?></td><td><?= e($ek['nama']) ?></td><td><?= $ketEk ?></td></tr>
       <?php endforeach; ?>
     </tbody>
   </table>
