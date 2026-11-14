@@ -75,6 +75,7 @@ CREATE TABLE siswa (
   jk TEXT NOT NULL DEFAULT 'L',
   tempat_lahir TEXT NOT NULL DEFAULT '',
   tanggal_lahir TEXT NOT NULL DEFAULT '',
+  tanggal_masuk TEXT NOT NULL DEFAULT '',
   alamat TEXT NOT NULL DEFAULT '',
   ortu TEXT NOT NULL DEFAULT '',
   telp TEXT NOT NULL DEFAULT '',
@@ -330,7 +331,7 @@ function migrate_siswa_detail(PDO $pdo): void
         return;
     }
     $add = [
-        'kode_agama', 'agama', 'pendidikan_sebelumnya',
+        'kode_agama', 'agama', 'pendidikan_sebelumnya', 'tanggal_masuk',
         'ayah', 'ibu', 'kerja_ayah', 'kerja_ibu',
         'ortu_jalan', 'ortu_kelurahan', 'ortu_kecamatan', 'ortu_kota', 'ortu_provinsi',
         'wali_nama', 'wali_kerja', 'wali_alamat',

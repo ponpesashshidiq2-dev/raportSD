@@ -16,6 +16,7 @@ function icon(string $name): string
         'kehadiran' => '<path d="M7 3h10v4H7zM5 5h2M17 5h2v16H5V5M9 14l2 2 4-4"/>',
         'catatan_wali' => '<path d="M4 4h16v12H8l-4 4zM8 8h8M8 12h5"/>',
         'cetak' => '<path d="M7 8V3h10v5M7 17H5a2 2 0 01-2-2v-4a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2h-2M7 14h10v7H7z"/>',
+        'sampul' => '<path d="M6 3h8l4 4v14H6zM14 3v4h4M9 12h6M9 16h6"/>',
         'backup' => '<path d="M12 3v10m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>',
         'users' => '<path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2M10 11a4 4 0 100-8 4 4 0 000 8M21 21v-2a4 4 0 00-3-3.9M16 3.1a4 4 0 010 7.8"/>',
         'logout' => '<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>',
@@ -39,6 +40,7 @@ function menu_items(): array
         ['kehadiran', 'Kehadiran Siswa', 'kehadiran', []],
         ['catatan_wali', 'Catatan Wali Kelas', 'catatan_wali', []],
         ['cetak', 'Cetak Raport', 'cetak', []],
+        ['sampul', 'Cetak Sampul Raport', 'sampul', []],
         ['backup', 'Backup & Restore', 'backup', []],
         ['users', 'Pengguna', 'users', []],
     ];

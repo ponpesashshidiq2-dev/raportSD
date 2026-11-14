@@ -3,11 +3,23 @@ $c = ctx();
 $tab = ($_GET['tab'] ?? 'daftar') === 'monitor' ? 'monitor' : 'daftar';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $aksi = $_POST['aksi'] ?? '';
+    if ($aksi === 'kkm') {
+        $id = (int) ($_POST['id'] ?? 0);
+        $kkmRaw = trim($_POST['kkm'] ?? '');
+        $kkm = $kkmRaw === '' ? null : max(0, min(100, (int) $kkmRaw));
+        if (one('SELECT id FROM mapel WHERE id=?', [$id])) {
+            update_row('mapel', ['kkm' => $kkm], 'id=?', [$id]);
+            flash_set('success', $kkm === null ? 'KKM dikosongkan.' : 'KKM tersimpan: ' . $kkm . '.');
+        } else {
+            flash_set('error', 'Mapel tidak ditemukan.');
+        }
+        redirect('mapel');
+    }
     if (!is_admin()) {
         flash_set('error', 'Hanya administrator yang dapat mengubah mata pelajaran.');
         redirect('mapel');
     }
-    $aksi = $_POST['aksi'] ?? '';
     if ($aksi === 'simpan') {
         $id = (int) ($_POST['id'] ?? 0);
         $kkm = trim($_POST['kkm'] ?? '');
@@ -130,7 +142,15 @@ echo context_bar();
             <tr>
               <td class="center"><?= $no ?></td>
               <td class="name-cell"><?= e($m['nama']) ?></td>
-              <td class="center"><?= $adaKkm ? '<b>' . (int) $m['kkm'] . '</b>' : '<span class="badge badge-gray">-</span>' ?></td>
+              <td class="center">
+                <form method="post" action="index.php?page=mapel" class="kkm-inline" title="Semua pengguna dapat mengubah KKM">
+                  <?= csrf_field() ?>
+                  <input type="hidden" name="aksi" value="kkm">
+                  <input type="hidden" name="id" value="<?= (int) $m['id'] ?>">
+                  <input type="number" name="kkm" min="0" max="100" value="<?= $adaKkm ? (int) $m['kkm'] : '' ?>" placeholder="-">
+                  <button class="btn sm" type="submit">Simpan</button>
+                </form>
+              </td>
               <td class="center"><?= (int) $m['kelas_min'] ?>-<?= (int) $m['kelas_max'] ?></td>
               <td class="center"><?= $tpN ?><div class="hint"><?= $tpT ? 'Sem ' . (int) $c['semester'] . ' / per Jilid' : 'Kls ' . (int) $c['kelas'] . ' / Sem ' . (int) $c['semester'] ?></div></td>
               <td class="center"><?= $adaKkm ? '<span class="badge badge-green">Ya</span>' : '<span class="badge badge-amber">Tidak</span>' ?></td>

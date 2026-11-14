@@ -43,6 +43,7 @@ function import_header_map(array $header): array
         'jk' => $find(['jk', 'jeniskelamin', 'kelamin', 'sex']),
         'tempat_lahir' => $find(['tempatlahir', 'tempat']),
         'tanggal_lahir' => $find(['tanggallahir', 'tglahir', 'lahir']),
+        'tanggal_masuk' => $find(['tanggalmasuk', 'tglmasuk', 'tanggalmasuksiswa', 'masuksiswa']),
         'tempat_tanggal' => $find(['tempattanggallahir']),
         'alamat' => $find(['alamat', 'alamatlengkap', 'alamatpesertadidik']),
         'kode_agama' => $find(['kodeagama']),
@@ -210,6 +211,7 @@ function siswa_import_rows(array $rows, string $mode): array
                 'jk' => in_array($jk, ['P', 'W'], true) ? 'P' : 'L',
                 'tempat_lahir' => $tempat,
                 'tanggal_lahir' => $tanggal,
+                'tanggal_masuk' => import_tanggal($get('tanggal_masuk')),
                 'alamat' => $get('alamat'),
                 'ortu' => $ayah !== '' ? $ayah : ($waliNama !== '' ? $waliNama : $ibu),
                 'telp' => $get('telp'),
@@ -306,6 +308,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'jk' => ($_POST['jk'] ?? 'L') === 'P' ? 'P' : 'L',
             'tempat_lahir' => trim($_POST['tempat_lahir'] ?? ''),
             'tanggal_lahir' => trim($_POST['tanggal_lahir'] ?? ''),
+            'tanggal_masuk' => preg_match('/^\d{4}-\d{2}-\d{2}$/', trim($_POST['tanggal_masuk'] ?? '')) ? trim($_POST['tanggal_masuk']) : '',
             'alamat' => trim($_POST['alamat'] ?? ''),
             'ortu' => $ayah !== '' ? $ayah : $waliNama,
             'telp' => trim($_POST['telp'] ?? ''),
@@ -516,6 +519,7 @@ page_head('Data Siswa', 'Kelola data peserta didik — daftar terkunci sesuai an
   <div class="form-row">
     <div class="field"><label>Tempat Lahir</label><input type="text" name="tempat_lahir" value="<?= e($edit['tempat_lahir'] ?? '') ?>"></div>
     <div class="field"><label>Tanggal Lahir</label><input type="date" name="tanggal_lahir" value="<?= e($edit['tanggal_lahir'] ?? '') ?>"></div>
+    <div class="field"><label>Tanggal Masuk</label><input type="date" name="tanggal_masuk" value="<?= e($edit['tanggal_masuk'] ?? '') ?>"></div>
     <div class="field">
       <label>Kode Agama</label>
       <select name="kode_agama">

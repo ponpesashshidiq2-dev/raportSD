@@ -186,6 +186,7 @@ function menu_allowed(string $page): bool
         'kehadiran' => ['admin', 'wali'],
         'catatan_wali' => ['admin', 'wali'],
         'cetak' => ['admin', 'wali', 'kepsek'],
+        'sampul' => ['admin', 'wali', 'kepsek'],
         'backup' => ['admin'],
         'users' => ['admin'],
     ];
@@ -212,6 +213,7 @@ function page_title(string $page): string
         'kehadiran' => 'Kehadiran Siswa',
         'catatan_wali' => 'Catatan Wali Kelas',
         'cetak' => 'Cetak Raport',
+        'sampul' => 'Cetak Sampul Raport',
         'backup' => 'Backup & Restore',
         'users' => 'Pengguna',
     ];
