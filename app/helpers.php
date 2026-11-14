@@ -347,7 +347,7 @@ function nilai_sebelumnya(int $siswa, int $mapel, string $ta, int $sem): ?float
     return nilai_akhir($siswa, $mapel, $pta, $psem);
 }
 
-function capaian_kompetensi(int $siswa, int $mapel, string $ta, int $sem, string $fase): array
+function capaian_kompetensi(int $siswa, int $mapel, string $ta, int $sem, string $fase, string $nama = ''): array
 {
     $rows = all(
         'SELECT tp.id, tp.deskripsi, AVG(n.nilai) AS rata FROM nilai_formatif n
@@ -366,7 +366,8 @@ function capaian_kompetensi(int $siswa, int $mapel, string $ta, int $sem, string
     }
     $low = $rows[0];
     $high = $rows[count($rows) - 1];
-    $t1 = sprintf('Capaian tertinggi: mampu %s (nilai %s).', $high['deskripsi'], format_nilai((float) $high['rata']));
+    $awal = $nama !== '' ? (preg_match('/^ananda\b/i', $nama) ? $nama : 'Ananda ' . $nama) . ' ' : '';
+    $t1 = $awal . sprintf('menunjukkan penguasaan dalam %s (nilai %s).', $high['deskripsi'], format_nilai((float) $high['rata']));
     if (count($rows) === 1) {
         $t2 = sprintf('Perlu dipertahankan dan diperdalam: %s (nilai %s).', $low['deskripsi'], format_nilai((float) $low['rata']));
     } else {

@@ -138,7 +138,7 @@ if (!$siswas): ?>
   <div class="card">
     <h3>Capaian 8 Dimensi Profil Lulusan &amp; Deskripsi Kokurikuler</h3>
     <p class="hint">Predikat <b>Berkembang / Cakap / Mahir</b> (Permendikdasmen No. 13 Tahun 2025) menjadi dasar deskripsi otomatis dengan format
-      <i>"{Nama siswa} menunjukkan capaian yang sangat baik/baik/cukup baik dalam [dimensi yang terisi], yang terlihat dari kemampuan [keterangan per dimensi]."</i>
+      <i>"Ananda {Nama siswa} menunjukkan capaian yang sangat baik/baik/cukup baik dalam [dimensi yang terisi], yang terlihat dari kemampuan [keterangan per dimensi]."</i>
       Jika lebih dari satu dimensi terisi, kalimat disambung. Yang tercetak pada raport adalah kolom <b>Deskripsi</b> — bukan predikat.</p>
     <div class="table-wrap">
       <table class="tbl">

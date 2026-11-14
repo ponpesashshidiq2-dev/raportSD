@@ -102,12 +102,13 @@ function generate_deskripsi_kokurikuler(array $predikat, string $nama = 'Ananda'
     if (!$grup) {
         return '';
     }
+    $awal = preg_match('/^ananda\b/i', $nama) ? $nama : 'Ananda ' . $nama;
     $kalimat = [];
     foreach (['Mahir', 'Cakap', 'Berkembang'] as $p) {
         if (!isset($grup[$p])) {
             continue;
         }
-        $t = $nama . ' menunjukkan capaian yang ' . $kata[$p] . ' dalam ' . gabung_indo(array_column($grup[$p], 'nama'));
+        $t = $awal . ' menunjukkan capaian yang ' . $kata[$p] . ' dalam ' . gabung_indo(array_column($grup[$p], 'nama'));
         $kets = array_values(array_filter(array_column($grup[$p], 'ket'), fn($x) => $x !== ''));
         if ($kets) {
             $t .= ', yang terlihat dari kemampuan ' . gabung_indo($kets);

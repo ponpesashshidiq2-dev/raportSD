@@ -56,10 +56,11 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
     $sid = (int) $s['id'];
     $romawi = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
     $angka = ['', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh'];
-    $capaianKok = one('SELECT predikat, deskripsi FROM kokurikuler_capaian WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']]) ?: [];
-    $deskKok = trim($capaianKok['deskripsi'] ?? '');
-    if ($deskKok === '') {
-        $arrPred = json_decode($capaianKok['predikat'] ?? '[]', true) ?: [];
+    $capaianKok = one('SELECT predikat, deskripsi, desk_manual FROM kokurikuler_capaian WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']]) ?: [];
+    $arrPred = json_decode($capaianKok['predikat'] ?? '[]', true) ?: [];
+    if ((int) ($capaianKok['desk_manual'] ?? 0) === 1) {
+        $deskKok = trim((string) ($capaianKok['deskripsi'] ?? ''));
+    } else {
         $deskKok = generate_deskripsi_kokurikuler($arrPred, $s['nama']);
     }
     $nilaiEkstra = all('SELECT e.id AS eid, e.nama, n.predikat, n.catatan FROM nilai_ekstra n JOIN ekstra e ON e.id=n.ekstra_id
@@ -122,7 +123,7 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
     <tbody>
     <?php foreach ($mapelList as $m): $no++;
         $na = nilai_akhir($sid, (int) $m['id'], $c['ta'], $c['semester']);
-        $cap = capaian_kompetensi($sid, (int) $m['id'], $c['ta'], $c['semester'], $c['fase']); ?>
+        $cap = capaian_kompetensi($sid, (int) $m['id'], $c['ta'], $c['semester'], $c['fase'], $s['nama']); ?>
       <tr>
         <td class="no"><?= $no ?></td>
         <td class="mapel"><?= e($m['nama']) ?><?php if ($na !== null): ?><div style="font-size:11px;font-weight:400">Predikat: <?= e(predikat($na)) ?></div><?php endif; ?></td>
@@ -151,7 +152,7 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
           $pEk = strtoupper(trim((string) $ek['predikat']));
           $kataEk = ['A' => 'sangat baik', 'B' => 'Baik', 'C' => 'Cukup', 'D' => 'Kurang'][$pEk]
               ?? ($pEk !== '' ? 'memperoleh predikat ' . e($ek['predikat']) : '');
-          $ketEk = e($s['nama']) . ($kataEk !== '' ? ' ' . $kataEk : '')
+          $ketEk = 'Ananda ' . e($s['nama']) . ($kataEk !== '' ? ' ' . $kataEk : '')
               . ($deskEk !== '' ? ' ' . e($deskEk) : '.'); ?>
         <tr><td class="no"><?= $ne ?></td><td><?= e($ek['nama']) ?></td><td><?= $ketEk ?></td></tr>
       <?php endforeach; ?>

@@ -100,7 +100,7 @@ if (!$ekstraList): ?>
   <?= csrf_field() ?>
   <div class="card">
     <h3>Deskripsi Ekstrakurikuler — diisi sekali per kegiatan</h3>
-    <p class="hint">Diisi sebagai lanjutan kalimat pada raport, mis. <i>"Budi Santoso sangat baik dalam keterampilan ..."</i> —
+    <p class="hint">Diisi sebagai lanjutan kalimat pada raport, mis. <i>"Ananda Budi Santoso sangat baik dalam keterampilan ..."</i> —
       predikat A = <b>sangat baik</b>, B = <b>Baik</b>, C = <b>Cukup</b>, D = <b>Kurang</b>; teks yang sama tampil untuk semua siswa
       (kolom predikat tidak dicetak, hanya nama kegiatan + keterangan). Kosongkan untuk tidak menampilkan keterangan.</p>
     <?php foreach ($ekstraList as $ek): ?>
