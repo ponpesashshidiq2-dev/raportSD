@@ -14,6 +14,24 @@ $isTahsin = is_tahsin($mapel);
 $jilidOpsi = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 $jilidSel = in_array($_GET['jilid'] ?? '', $jilidOpsi, true) ? (int) $_GET['jilid'] : 1;
 
+function tp_ids_bawaan(): array
+{
+    $set = [];
+    foreach (daftar_tp() as $fases) {
+        foreach ($fases as $list) {
+            foreach ($list as $d) {
+                $set[$d] = true;
+            }
+        }
+    }
+    if (!$set) {
+        return [];
+    }
+    $keys = array_keys($set);
+    $in = implode(',', array_fill(0, count($keys), '?'));
+    return array_column(all("SELECT id FROM tp WHERE deskripsi IN ($in)", $keys), 'id');
+}
+
 function tp_header_map(array $header): array
 {
     $norm = [];
@@ -288,6 +306,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('tp', $back);
     }
 
+    if ($aksi === 'tp_hapus_bawaan') {
+        if (!is_admin()) {
+            flash_set('error', 'Hanya administrator yang dapat menghapus TP bawaan.');
+            redirect('tp');
+        }
+        $ids = tp_ids_bawaan();
+        if (!$ids) {
+            flash_set('success', 'Tidak ada TP bawaan tersisa.');
+            redirect('tp', $back);
+        }
+        db()->beginTransaction();
+        try {
+            $n = 0;
+            foreach (array_chunk($ids, 500) as $chunk) {
+                $in = implode(',', array_fill(0, count($chunk), '?'));
+                run("DELETE FROM nilai_formatif WHERE tp_id IN ($in)", $chunk);
+                $n += run("DELETE FROM tp WHERE id IN ($in)", $chunk);
+            }
+            db()->commit();
+            flash_set('success', "$n TP bawaan dihapus beserta nilai formatifnya. TP impor dan buatan sendiri tetap tersimpan.");
+        } catch (Throwable $ex) {
+            db()->rollBack();
+            flash_set('error', 'Gagal menghapus TP bawaan: ' . $ex->getMessage());
+        }
+        redirect('tp', $back);
+    }
+
     if ($aksi === 'tp_import') {
         if (!is_admin()) {
             flash_set('error', 'Hanya administrator yang dapat mengimpor TP. Pengguna lain tidak memiliki akses import.');
@@ -427,6 +472,23 @@ echo context_bar();
     <a class="btn secondary" href="index.php?page=tp&act=template">Template Kosong</a>
   </div>
 </form>
+<?php endif; ?>
+
+<?php
+$tpBawaanCount = count(tp_ids_bawaan());
+if (is_admin() && $tpBawaanCount > 0): ?>
+<div class="alert alert-warning" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+  <span>Ada <b><?= $tpBawaanCount ?> TP bawaan</b> aplikasi (bukan impor) — hapus sekaligus agar tidak perlu menghapus satu per satu. TP impor dan buatan sendiri <b>tidak</b> ikut terhapus.</span>
+  <form method="post" action="index.php?page=tp" data-confirm="Hapus semua <?= $tpBawaanCount ?> TP bawaan beserta nilai formatifnya? TP impor tidak ikut terhapus." style="display:inline">
+    <?= csrf_field() ?>
+    <input type="hidden" name="aksi" value="tp_hapus_bawaan">
+    <input type="hidden" name="mapel_id" value="<?= $mapelId ?>">
+    <input type="hidden" name="kelas" value="<?= $kelasSel ?>">
+    <input type="hidden" name="sem" value="<?= $semSel ?>">
+    <input type="hidden" name="jilid" value="<?= $jilidSel ?>">
+    <button class="btn danger" type="submit">Hapus <?= $tpBawaanCount ?> TP Bawaan</button>
+  </form>
+</div>
 <?php endif; ?>
 
 <?php if (!$mapel): ?>
