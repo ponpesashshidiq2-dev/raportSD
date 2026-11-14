@@ -24,6 +24,9 @@ CREATE TABLE profil (
   website TEXT NOT NULL DEFAULT '',
   kepsek TEXT NOT NULL DEFAULT '',
   kepsek_nip TEXT NOT NULL DEFAULT '',
+  logo TEXT NOT NULL DEFAULT '',
+  tanggal_rapor TEXT NOT NULL DEFAULT '',
+  tanggal_biodata TEXT NOT NULL DEFAULT '',
   ta TEXT NOT NULL DEFAULT '2025/2026',
   semester INTEGER NOT NULL DEFAULT 1,
   kelas_aktif INTEGER NOT NULL DEFAULT 1,
@@ -339,6 +342,19 @@ function migrate_siswa_detail(PDO $pdo): void
     foreach ($add as $c) {
         if (!in_array($c, $cols, true)) {
             $pdo->exec("ALTER TABLE siswa ADD COLUMN $c TEXT NOT NULL DEFAULT ''");
+        }
+    }
+}
+
+function migrate_profil_tambahan(PDO $pdo): void
+{
+    $cols = array_map(fn($c) => $c['name'], $pdo->query('PRAGMA table_info(profil)')->fetchAll(PDO::FETCH_ASSOC));
+    if (!$cols) {
+        return;
+    }
+    foreach (['logo', 'tanggal_rapor', 'tanggal_biodata'] as $c) {
+        if (!in_array($c, $cols, true)) {
+            $pdo->exec("ALTER TABLE profil ADD COLUMN $c TEXT NOT NULL DEFAULT ''");
         }
     }
 }

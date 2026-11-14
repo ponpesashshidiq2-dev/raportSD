@@ -25,6 +25,7 @@ function db(): PDO
         migrate_kokurikuler($pdo);
         migrate_tp_kelas($pdo);
         migrate_jilid($pdo);
+        migrate_profil_tambahan($pdo);
     }
     return $pdo;
 }
@@ -378,11 +379,11 @@ function capaian_kompetensi(int $siswa, int $mapel, string $ta, int $sem, string
     $low = $rows[0];
     $high = $rows[count($rows) - 1];
     $awal = $nama !== '' ? (preg_match('/^ananda\b/i', $nama) ? $nama : 'Ananda ' . $nama) . ' ' : '';
-    $t1 = $awal . sprintf('menunjukkan penguasaan dalam %s (nilai %s).', $high['deskripsi'], format_nilai((float) $high['rata']));
+    $t1 = $awal . sprintf('menunjukkan penguasaan dalam %s.', $high['deskripsi']);
     if (count($rows) === 1) {
-        $t2 = sprintf('Perlu dipertahankan dan diperdalam: %s (nilai %s).', $low['deskripsi'], format_nilai((float) $low['rata']));
+        $t2 = $awal . sprintf('perlu dipertahankan dan diperdalam dalam %s.', $low['deskripsi']);
     } else {
-        $t2 = sprintf('Perlu penguatan: %s (nilai %s).', $low['deskripsi'], format_nilai((float) $low['rata']));
+        $t2 = $awal . sprintf('perlu bantuan dalam %s.', $low['deskripsi']);
     }
     return ['tinggi' => $t1, 'rendah' => $t2];
 }

@@ -24,8 +24,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $konteks['bobot_formatif'] = max(0, min(100, (int) ($_POST['bobot_formatif'] ?? 40)));
             $konteks['bobot_sumatif'] = max(0, min(100, (int) ($_POST['bobot_sumatif'] ?? 60)));
         }
+        foreach (['tanggal_rapor', 'tanggal_biodata'] as $f) {
+            if (isset($_POST[$f])) {
+                $v = trim($_POST[$f]);
+                $konteks[$f] = preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) ? $v : '';
+            }
+        }
         update_row('profil', $konteks, 'id=?', [1]);
         flash_set('success', 'Profil dan konteks raport tersimpan.');
+        redirect('profil');
+    }
+
+    if ($aksi === 'logo' && is_admin()) {
+        $f = $_FILES['logo'] ?? null;
+        if (!$f || ($f['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            flash_set('error', 'File logo belum dipilih atau gagal diunggah.');
+            redirect('profil');
+        }
+        $ext = strtolower(pathinfo((string) $f['name'], PATHINFO_EXTENSION));
+        if (!in_array($ext, ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'], true)) {
+            flash_set('error', 'Format logo harus PNG, JPG, JPEG, WEBP, GIF, atau SVG.');
+            redirect('profil');
+        }
+        if ((int) $f['size'] > 2 * 1024 * 1024) {
+            flash_set('error', 'Ukuran logo maksimal 2 MB.');
+            redirect('profil');
+        }
+        if (!is_dir(DATA_DIR)) {
+            mkdir(DATA_DIR, 0777, true);
+        }
+        $namaFile = 'logo.' . $ext;
+        $lama = basename(trim((string) profil()['logo']));
+        if ($lama !== '' && $lama !== $namaFile) {
+            @unlink(DATA_DIR . '/' . $lama);
+        }
+        if (!move_uploaded_file($f['tmp_name'], DATA_DIR . '/' . $namaFile)) {
+            flash_set('error', 'Gagal menyimpan file logo.');
+            redirect('profil');
+        }
+        update_row('profil', ['logo' => $namaFile], 'id=?', [1]);
+        flash_set('success', 'Logo sampul berhasil diunggah.');
+        redirect('profil');
+    }
+
+    if ($aksi === 'logo_hapus' && is_admin()) {
+        $lama = basename(trim((string) profil()['logo']));
+        if ($lama !== '') {
+            @unlink(DATA_DIR . '/' . $lama);
+        }
+        update_row('profil', ['logo' => ''], 'id=?', [1]);
+        flash_set('success', 'Logo sampul dihapus.');
         redirect('profil');
     }
 
@@ -129,11 +177,54 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
           <input type="number" name="bobot_sumatif" min="0" max="100" value="<?= (int) $p['bobot_sumatif'] ?>"<?= $disabled ?>>
         </div>
       </div>
+      <div class="form-row">
+        <div class="field">
+          <label>Tanggal Rapor (untuk Cetak Raport)</label>
+          <input type="date" name="tanggal_rapor" value="<?= e($p['tanggal_rapor']) ?>"<?= $disabledEdit ?>>
+          <div class="hint">Tanggal yang tercetak pada raport — kosongkan untuk memakai tanggal hari ini.</div>
+        </div>
+        <div class="field">
+          <label>Tanggal Biodata (untuk Sampul)</label>
+          <input type="date" name="tanggal_biodata" value="<?= e($p['tanggal_biodata']) ?>"<?= $disabledEdit ?>>
+          <div class="hint">Tanggal pada biodata siswa di sampul — kosongkan untuk memakai tanggal masuk tiap siswa.</div>
+        </div>
+      </div>
       <div class="hint mb">Nilai Akhir = rata-rata formatif &times; bobot + rata-rata sumatif &times; bobot.</div>
       <button class="btn" type="submit">Simpan Profil &amp; Konteks</button>
     </div>
   </div>
 </form>
+
+<div class="card">
+  <h3>Logo Sampul Raport (Halaman 1)</h3>
+  <?php if (!is_admin()): ?>
+    <div class="alert alert-info">Hanya administrator yang dapat mengunggah logo sampul.</div>
+  <?php else: ?>
+    <div class="hint mb">Logo tampil di bagian atas sampul halaman pertama. Format PNG/JPG/JPEG/WEBP/GIF/SVG, maksimal 2 MB.</div>
+    <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
+      <?php if (trim($p['logo']) !== ''): ?>
+        <img src="data/<?= e($p['logo']) ?>" alt="Logo sampul" style="max-height:72px;max-width:150px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px">
+      <?php else: ?>
+        <span class="hint">Belum ada logo — tampil judul tanpa logo.</span>
+      <?php endif; ?>
+    </div>
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:12px">
+      <form method="post" action="index.php?page=profil" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
+        <?= csrf_field() ?>
+        <input type="hidden" name="aksi" value="logo">
+        <div class="field" style="margin-bottom:0"><label>Pilih File Logo</label><input type="file" name="logo" accept=".png,.jpg,.jpeg,.webp,.gif,.svg" required></div>
+        <button class="btn" type="submit">Unggah Logo</button>
+      </form>
+      <?php if (trim($p['logo']) !== ''): ?>
+        <form method="post" action="index.php?page=profil" data-confirm="Hapus logo sampul?">
+          <?= csrf_field() ?>
+          <input type="hidden" name="aksi" value="logo_hapus">
+          <button class="btn danger" type="submit">Hapus Logo</button>
+        </form>
+      <?php endif; ?>
+    </div>
+  <?php endif; ?>
+</div>
 
 <div class="grid grid-2">
   <form method="post" action="index.php?page=profil" data-confirm="Simpan data wali kelas seluruh kelas &amp; semester?">

@@ -126,7 +126,7 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
         $cap = capaian_kompetensi($sid, (int) $m['id'], $c['ta'], $c['semester'], $c['fase'], $s['nama']); ?>
       <tr>
         <td class="no"><?= $no ?></td>
-        <td class="mapel"><?= e($m['nama']) ?><?php if ($na !== null): ?><div style="font-size:11px;font-weight:400">Predikat: <?= e(predikat($na)) ?></div><?php endif; ?></td>
+        <td class="mapel"><?= e($m['nama']) ?></td>
         <td class="nilai"><?= $na !== null ? e(format_nilai($na)) : '-' ?></td>
         <td class="capai"><?= e($cap['tinggi']) ?><br><?= e($cap['rendah']) ?></td>
       </tr>
@@ -194,7 +194,7 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
   </div>
   <?php endif; ?>
 
-  <div class="rp-place"><?= e($p['kota'] ?: '........................') ?>, <?= e(tgl_indo()) ?></div>
+  <div class="rp-place"><?= e($p['kota'] ?: '........................') ?>, <?= e(trim($p['tanggal_rapor'] ?? '') !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $p['tanggal_rapor']) ? tgl_indo($p['tanggal_rapor']) : tgl_indo()) ?></div>
   <div class="rp-ttd">
     <div class="pos">
       <div class="role">Wali Kelas</div>

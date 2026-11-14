@@ -65,7 +65,8 @@ page_head('Cetak Sampul Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['f
     $jkTeks = $s['jk'] === 'P' ? 'Perempuan' : 'Laki-laki';
 
     $kotaCetak = trim($p['kota']);
-    $tglMasuk = $tglAman($s['tanggal_masuk'] ?? '');
+    $tglBiodataProfil = $tglAman($p['tanggal_biodata'] ?? '');
+    $tglMasuk = $tglBiodataProfil !== '' ? $tglBiodataProfil : $tglAman($s['tanggal_masuk'] ?? '');
     $tglCetak = $kotaCetak;
     if ($tglMasuk !== '') {
         $tglCetak = ($tglCetak !== '' ? $tglCetak . ', ' : '') . $tglMasuk;
@@ -96,6 +97,9 @@ page_head('Cetak Sampul Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['f
 <!-- HALAMAN 1 — SAMPUL -->
 <div class="raport-sheet sp-cover">
   <div class="sp-top">
+    <?php if (trim($p['logo']) !== ''): ?>
+      <div class="sp-logo"><img src="data/<?= e($p['logo']) ?>" alt="Logo Sekolah"></div>
+    <?php endif; ?>
     <div class="sp-title">RAPOR PESERTA DIDIK</div>
     <div class="sp-title">SEKOLAH DASAR</div>
     <div class="sp-title">(SD)</div>

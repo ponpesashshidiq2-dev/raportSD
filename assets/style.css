@@ -196,7 +196,9 @@ table.rp-tbl td.capai{font-size:12.5px}
 
 /* Cetak sampul raport */
 .sp-cover{display:flex;flex-direction:column;min-height:700px;text-align:center}
-.sp-title{font-size:19px;font-weight:800;letter-spacing:.6px;margin-top:4px}
+.sp-title{font-size:19px;font-weight:800;letter-spacing:.6px;margin-top:4px;text-align:center}
+.sp-logo{margin-bottom:12px}
+.sp-logo img{max-height:120px;max-width:180px}
 .sp-ident{margin:auto 0;width:78%;max-width:520px;min-width:280px;margin-left:auto;margin-right:auto}
 .sp-row{margin-bottom:22px}
 .sp-lbl{display:block;font-size:15px;margin-bottom:7px}
