@@ -34,7 +34,7 @@ function tp_header_map(array $header): array
     ];
 }
 
-function tp_import_rows(array $rows, string $mode, int $defaultKelas = 1, int $defaultSem = 1): array
+function tp_import_rows(array $rows, string $mode, int $defaultKelas = 1, int $defaultSem = 1, bool $semuaTarget = false): array
 {
     $stats = ['total' => 0, 'baru' => 0, 'ubah' => 0, 'lewati' => 0, 'pesan' => []];
     if (count($rows) < 2) {
@@ -73,65 +73,70 @@ function tp_import_rows(array $rows, string $mode, int $defaultKelas = 1, int $d
                 $stats['pesan'][] = 'Mapel "' . $namaMapel . '" tidak ditemukan.';
                 continue;
             }
-            $kelas = $kTeks !== '' ? (int) $kTeks : $defaultKelas;
-            if ($kelas < 1 || $kelas > 6) {
+            $kelasList = $kTeks !== '' ? [(int) $kTeks] : ($semuaTarget ? [1, 2, 3, 4, 5, 6] : [$defaultKelas]);
+            if ($kTeks !== '' && ($kelasList[0] < 1 || $kelasList[0] > 6)) {
                 $stats['lewati']++;
                 $stats['pesan'][] = 'Kelas pada baris "' . $namaMapel . '" tidak valid (harus 1-6).';
                 continue;
             }
-            $sem = $sTeks !== '' ? (int) $sTeks : $defaultSem;
-            if (!in_array($sem, [1, 2], true)) {
+            $semList = $sTeks !== '' ? [(int) $sTeks] : ($semuaTarget ? [1, 2] : [$defaultSem]);
+            if ($sTeks !== '' && !in_array($semList[0], [1, 2], true)) {
                 $stats['lewati']++;
                 $stats['pesan'][] = 'Semester pada baris "' . $namaMapel . '" tidak valid (harus 1 atau 2).';
                 continue;
             }
-            $fase = fase_of($kelas);
             if ($deskripsi === '') {
                 $stats['lewati']++;
-                $stats['pesan'][] = 'Baris ' . $namaMapel . ' kelas ' . $kelas . ' semester ' . $sem . ' tanpa deskripsi.';
+                $stats['pesan'][] = 'Baris ' . $namaMapel . ' tanpa deskripsi.';
                 continue;
             }
             $kode = $get('kode');
             $urutan = (int) $get('urutan');
-            $existing = null;
-            if ($kode !== '') {
-                $existing = one('SELECT id FROM tp WHERE mapel_id=? AND kelas=? AND semester=? AND kode=?', [$mid, $kelas, $sem, $kode]);
-            }
-            if (!$existing) {
-                $existing = one('SELECT id FROM tp WHERE mapel_id=? AND kelas=? AND semester=? AND deskripsi=?', [$mid, $kelas, $sem, $deskripsi]);
-            }
-            if ($existing) {
-                if ($mode === 'skip') {
-                    $stats['lewati']++;
-                    continue;
-                }
-                $data = ['mapel_id' => $mid, 'fase' => $fase, 'kelas' => $kelas, 'semester' => $sem, 'deskripsi' => $deskripsi];
-                if ($kode !== '') {
-                    $data['kode'] = $kode;
-                }
-                if ($urutan > 0) {
-                    $data['urutan'] = $urutan;
-                }
-                update_row('tp', $data, 'id=?', [$existing['id']]);
-                $stats['ubah']++;
-            } else {
-                $n = (int) scalar('SELECT COUNT(*) FROM tp WHERE mapel_id=? AND kelas=? AND semester=?', [$mid, $kelas, $sem]) + 1;
-                if ($kode === '') {
-                    while (one('SELECT id FROM tp WHERE mapel_id=? AND kelas=? AND semester=? AND kode=?', [$mid, $kelas, $sem, 'TP.' . $fase . '.' . $n])) {
-                        $n++;
+            foreach ($kelasList as $kelas) {
+                foreach ($semList as $sem) {
+                    $fase = fase_of($kelas);
+                    $existing = null;
+                    if ($kode !== '') {
+                        $existing = one('SELECT id FROM tp WHERE mapel_id=? AND kelas=? AND semester=? AND kode=?', [$mid, $kelas, $sem, $kode]);
                     }
-                    $kode = 'TP.' . $fase . '.' . $n;
+                    if (!$existing) {
+                        $existing = one('SELECT id FROM tp WHERE mapel_id=? AND kelas=? AND semester=? AND deskripsi=?', [$mid, $kelas, $sem, $deskripsi]);
+                    }
+                    if ($existing) {
+                        if ($mode === 'skip') {
+                            $stats['lewati']++;
+                            continue;
+                        }
+                        $data = ['mapel_id' => $mid, 'fase' => $fase, 'kelas' => $kelas, 'semester' => $sem, 'deskripsi' => $deskripsi];
+                        if ($kode !== '') {
+                            $data['kode'] = $kode;
+                        }
+                        if ($urutan > 0) {
+                            $data['urutan'] = $urutan;
+                        }
+                        update_row('tp', $data, 'id=?', [$existing['id']]);
+                        $stats['ubah']++;
+                    } else {
+                        $n = (int) scalar('SELECT COUNT(*) FROM tp WHERE mapel_id=? AND kelas=? AND semester=?', [$mid, $kelas, $sem]) + 1;
+                        if ($kode === '') {
+                            while (one('SELECT id FROM tp WHERE mapel_id=? AND kelas=? AND semester=? AND kode=?', [$mid, $kelas, $sem, 'TP.' . $fase . '.' . $n])) {
+                                $n++;
+                            }
+                            $kode = 'TP.' . $fase . '.' . $n;
+                        }
+                        insert_row('tp', [
+                            'mapel_id' => $mid,
+                            'fase' => $fase,
+                            'kelas' => $kelas,
+                            'semester' => $sem,
+                            'kode' => $kode,
+                            'deskripsi' => $deskripsi,
+                            'urutan' => $urutan > 0 ? $urutan : $n,
+                        ]);
+                        $stats['baru']++;
+                        $kode = $get('kode');
+                    }
                 }
-                insert_row('tp', [
-                    'mapel_id' => $mid,
-                    'fase' => $fase,
-                    'kelas' => $kelas,
-                    'semester' => $sem,
-                    'kode' => $kode,
-                    'deskripsi' => $deskripsi,
-                    'urutan' => $urutan > 0 ? $urutan : $n,
-                ]);
-                $stats['baru']++;
             }
         }
         db()->commit();
@@ -227,7 +232,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         try {
             $rows = xlsx_read($_FILES['file']['tmp_name'], $_FILES['file']['name']);
-            $stats = tp_import_rows($rows, ($_POST['mode'] ?? 'update') === 'skip' ? 'skip' : 'update', $kelasSel, $semSel);
+            $semuaTarget = ($_POST['target'] ?? 'all') !== 'ctx';
+            $stats = tp_import_rows($rows, ($_POST['mode'] ?? 'update') === 'skip' ? 'skip' : 'update', $kelasSel, $semSel, $semuaTarget);
             $ringkas = sprintf(
                 'Impor selesai: %d baris diproses, %d baru, %d diperbarui, %d dilewati.',
                 $stats['total'], $stats['baru'], $stats['ubah'], $stats['lewati']
@@ -293,9 +299,19 @@ echo context_bar();
   <input type="hidden" name="kelas" value="<?= $kelasSel ?>">
   <input type="hidden" name="sem" value="<?= $semSel ?>">
   <h3>Import Excel / CSV</h3>
-  <div class="hint mb">Kolom wajib: <b>Mapel</b>, <b>Deskripsi</b>. Kolom opsional: <b>Kelas</b> (1-6), <b>Semester</b> (1/2), <b>Kode</b> (otomatis TP.fase.N bila kosong), <b>Urutan</b>. Setiap baris masuk ke kelas & semester yang tertulis pada baris itu — satu file boleh berisi banyak kelas/semester; bila kosong ikut pilihan Kelas/Semester di atas. Nama mapel harus persis sama dengan daftar <a href="index.php?page=mapel">Mata Pelajaran</a>. Baris contoh pada template boleh dihapus atau diganti.</div>
+  <div class="hint mb">Kolom wajib: <b>Mapel</b>, <b>Deskripsi</b>. Kolom opsional: <b>Kelas</b> (1-6), <b>Semester</b> (1/2), <b>Kode</b> (otomatis TP.fase.N bila kosong), <b>Urutan</b>.
+    Pada <b>Target</b>: <b>Semua kelas &amp; semester</b> (bawaan) — baris tanpa Kelas/Semester langsung diterapkan sekaligus ke kelas 1-6 dan semester 1-2, satu kali impor untuk semua kelas;
+    baris yang mencantumkan Kelas/Semester tetap mengikuti isinya. <b>Ikut pilihan di atas</b> — baris tanpa kelas/semester memakai Kelas/Semester yang dipilih.
+    Nama mapel harus persis sama dengan daftar <a href="index.php?page=mapel">Mata Pelajaran</a>. Baris contoh pada template boleh dihapus atau diganti.</div>
   <div class="form-row">
     <div class="field"><label>File (.xlsx / .csv)</label><input type="file" name="file" accept=".xlsx,.csv,.txt" required></div>
+    <div class="field">
+      <label>Target Kelas/Semester</label>
+      <select name="target">
+        <option value="all">Semua kelas (1-6) &amp; semester (1-2)</option>
+        <option value="ctx">Ikut pilihan Kelas/Semester di atas</option>
+      </select>
+    </div>
     <div class="field">
       <label>Jika TP sudah ada</label>
       <select name="mode">
