@@ -128,7 +128,7 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
       </div>
       <div class="form-row">
         <div class="field"><label>Kepala Sekolah</label><input type="text" name="kepsek" value="<?= e($p['kepsek']) ?>"<?= $disabled ?>></div>
-        <div class="field"><label>NIP Kepala Sekolah</label><input type="text" name="kepsek_nip" value="<?= e($p['kepsek_nip']) ?>"<?= $disabled ?>></div>
+        <div class="field"><label>NBM Kepala Sekolah</label><input type="text" name="kepsek_nip" value="<?= e($p['kepsek_nip']) ?>"<?= $disabled ?>></div>
       </div>
     </div>
 
@@ -213,7 +213,7 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
         <?= csrf_field() ?>
         <input type="hidden" name="aksi" value="logo">
         <div class="field" style="margin-bottom:0"><label>Pilih File Logo</label><input type="file" name="logo" accept=".png,.jpg,.jpeg,.webp,.gif,.svg" required></div>
-        <button class="btn" type="submit">Unggah Logo</button>
+        <button class="btn" type="submit">Import Logo</button>
       </form>
       <?php if (trim($p['logo']) !== ''): ?>
         <form method="post" action="index.php?page=profil" data-confirm="Hapus logo sampul?">
@@ -241,7 +241,7 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
         <h4 style="margin:14px 0 6px">Semester <?= $s ?> <?= $s === (int) $p['semester'] ? '<span class="badge badge-blue">konteks aktif</span>' : '' ?></h4>
         <div class="table-wrap">
           <table class="tbl">
-            <thead><tr><th style="width:90px">Kelas</th><th>Nama Wali Kelas</th><th>NIP</th></tr></thead>
+            <thead><tr><th style="width:90px">Kelas</th><th>Nama Wali Kelas</th><th>NBM</th></tr></thead>
             <tbody>
             <?php for ($k = 1; $k <= 6; $k++):
                 $w = walikelas($k, $s);

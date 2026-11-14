@@ -180,7 +180,7 @@ page_head('Cetak Sampul Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['f
       <div class="sp-kepsek">Kepala <?= e($p['sekolah'] !== '' ? $p['sekolah'] : 'Sekolah') ?></div>
       <div class="sp-sign"></div>
       <div class="sp-nama"><?= e($p['kepsek']) ?></div>
-      <div class="sp-nip">NIP: <?= e($p['kepsek_nip']) ?></div>
+      <div class="sp-nip">NBM: <?= e($p['kepsek_nip']) ?></div>
     </div>
   </div>
 </div>

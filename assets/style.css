@@ -162,8 +162,9 @@ table.rp-tbl td.capai{font-size:12.5px}
 .rp-section-title{font-weight:800;font-size:13.5px;margin:14px 0 6px;text-transform:uppercase}
 .rp-kehadiran{width:100%;max-width:430px;border-collapse:collapse;font-size:13px}
 .rp-kehadiran th,.rp-kehadiran td{border:1px solid #000;padding:6px 8px;text-align:center}
-.rp-ttd{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:34px;font-size:13px;text-align:center;page-break-inside:avoid}
+.rp-ttd{display:grid;grid-template-columns:1fr 1fr;gap:10px 40px;margin-top:16px;font-size:13px;text-align:center;page-break-inside:avoid}
 .rp-ttd .pos{display:flex;flex-direction:column;min-height:130px}
+.rp-ttd .pos-tengah{grid-column:1 / -1;justify-self:center;width:45%;min-width:230px;margin-top:4px}
 .rp-ttd .who{margin-top:auto;font-weight:700;text-decoration:underline}
 .rp-ttd .nip{font-size:12px}
 .rp-ttd .role{min-height:20px}
