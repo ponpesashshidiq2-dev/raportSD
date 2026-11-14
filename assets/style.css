@@ -185,3 +185,11 @@ table.rp-tbl td.capai{font-size:12.5px}
 .class-switch{display:flex;align-items:center;gap:6px;margin-right:12px}.class-switch label{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px}.class-switch select{font-size:14px;font-weight:700;padding:6px 8px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:#0f172a;cursor:pointer}.class-switch select:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
 .rp-dua{display:grid;grid-template-columns:1.1fr 1fr;gap:12px;margin-top:12px;page-break-inside:avoid}.rp-box{border:1.3px solid #334155;overflow:hidden}.rp-box-title{background:#e2e8f0;border-bottom:1.3px solid #334155;text-align:center;font-weight:700;font-size:12.5px;padding:5px 8px;letter-spacing:.2px}.rp-box-body{padding:8px 10px;min-height:86px;font-size:13px;line-height:1.55}table.rp-hadir{width:100%;border-collapse:collapse;font-size:13px}table.rp-hadir td{padding:7px 11px}table.rp-hadir tr+tr td{border-top:1px solid #cbd5e1}table.rp-hadir td.val{border-left:1px solid #cbd5e1;text-align:right;width:44%;white-space:nowrap;font-weight:600}.rp-tanggapan{margin-top:12px;page-break-inside:avoid}.rp-tanggapan .rp-box-body{min-height:64px}
 .rp-kok-desk{margin-top:12px;page-break-inside:avoid}.rp-kok-desk .rp-box-body{min-height:38px}
+.rp-keputusan{margin-top:14px;page-break-inside:avoid}
+.rp-keputusan-title{font-weight:800;font-size:14px;margin-bottom:6px}
+.rp-keputusan-box{border:1.3px solid #334155;padding:12px 14px 14px;font-size:13.5px;line-height:1.6}
+.rp-keputusan-box p{margin:0 0 10px}
+.rk-row{display:flex;gap:8px;padding:2px 0 2px 20px}
+.rk-row .rk-label{width:330px;flex:none}
+.rk-maka{margin-top:12px!important;padding-left:20px}
+.rk-naik{font-size:15.5px;padding-left:20px}

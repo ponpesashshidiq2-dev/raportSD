@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('nilai_ekstra');
     }
     $nilai = $_POST['nilai'] ?? [];
+    $ket = $_POST['catatan'] ?? [];
     $tersimpan = 0;
     db()->beginTransaction();
     try {
@@ -17,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($siswas as $s) {
                 $key = $ek['id'] . '_' . $s['id'];
                 $p = trim((string) ($nilai[$key] ?? ''));
+                $catatan = trim((string) ($ket[$key] ?? ''));
                 $ada = one('SELECT id FROM nilai_ekstra WHERE siswa_id=? AND ekstra_id=? AND ta=? AND semester=?',
                     [$s['id'], $ek['id'], $c['ta'], $c['semester']]);
                 if ($p === '') {
@@ -25,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     continue;
                 }
-                $row = ['predikat' => $p, 'catatan' => ''];
+                $row = ['predikat' => $p, 'catatan' => $catatan];
                 if ($ada) {
                     update_row('nilai_ekstra', $row, 'id=?', [$ada['id']]);
                 } else {
@@ -47,9 +49,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $existing = [];
+$existingKet = [];
 foreach (all('SELECT ekstra_id, siswa_id, predikat, catatan FROM nilai_ekstra WHERE ta=? AND semester=?',
     [$c['ta'], $c['semester']]) as $r) {
     $existing[$r['ekstra_id'] . '_' . $r['siswa_id']] = $r['predikat'];
+    $existingKet[$r['ekstra_id'] . '_' . $r['siswa_id']] = $r['catatan'];
 }
 
 page_head('Input Nilai Ekstrakurikuler', 'Siswa hanya menampilkan kegiatan yang nilainya diisi pada raport.');
@@ -80,12 +84,13 @@ if (!$ekstraList): ?>
           <td class="name-cell"><?= e($s['nama']) ?></td>
           <?php foreach ($ekstraList as $ek):
               $k = $ek['id'] . '_' . $s['id']; ?>
-            <td class="center">
+            <td class="center" style="min-width:150px">
               <select name="nilai[<?= $k ?>]" style="min-width:64px">
                 <?php foreach ($predikatOps as $val => $lbl): ?>
                   <option value="<?= $val ?>"<?= ($existing[$k] ?? '') === $val ? ' selected' : '' ?>><?= e($lbl) ?></option>
                 <?php endforeach; ?>
               </select>
+              <input type="text" name="catatan[<?= $k ?>]" value="<?= e($existingKet[$k] ?? '') ?>" placeholder="Deskripsi" maxlength="200" style="margin-top:4px;width:100%">
             </td>
           <?php endforeach; ?>
         </tr>
@@ -95,7 +100,7 @@ if (!$ekstraList): ?>
   </div>
   <div class="toolbar mt">
     <button class="btn" type="submit">Simpan Nilai Ekstrakurikuler</button>
-    <span class="hint">Pilih <b>-</b> untuk menghapus nilai. Predikat A-D setara dengan catatan wali kelas.</span>
+    <span class="hint">Pilih <b>-</b> untuk menghapus nilai. Isi <b>Deskripsi</b> (opsional) untuk tampil pada raport.</span>
   </div>
 </form>
 <?php endif; ?>

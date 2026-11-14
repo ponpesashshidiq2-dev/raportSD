@@ -48,18 +48,51 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
 
 <?php foreach ($terpilih as $s):
     $sid = (int) $s['id'];
+    $romawi = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+    $angka = ['', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh'];
+    $nilaiKok = all('SELECT k.nama, n.keterangan FROM kokurikuler_nilai n JOIN kokurikuler_kegiatan k ON k.id=n.kegiatan_id
+        WHERE n.siswa_id=? AND n.ta=? AND n.semester=? ORDER BY k.urutan, k.nama', [$sid, $c['ta'], $c['semester']]);
     $capaianKok = one('SELECT deskripsi FROM kokurikuler_capaian WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']]);
-    $deskKok = $capaianKok['deskripsi'] ?? '';
+    $deskKok = '';
+    foreach ($nilaiKok as $kk) {
+        $ket = trim($kk['keterangan']);
+        if ($ket === '') {
+            continue;
+        }
+        $deskKok .= ($deskKok !== '' ? ' ' : '') . 'Pada kegiatan ' . $kk['nama'] . ', ' . rtrim($ket, ". \t") . '.';
+    }
+    if ($deskKok === '') {
+        $deskKok = trim($capaianKok['deskripsi'] ?? '');
+    }
     $nilaiEkstra = all('SELECT e.nama, n.predikat, n.catatan FROM nilai_ekstra n JOIN ekstra e ON e.id=n.ekstra_id
         WHERE n.siswa_id=? AND n.ta=? AND n.semester=? ORDER BY e.urutan, e.nama', [$sid, $c['ta'], $c['semester']]);
     $hadir = one('SELECT * FROM kehadiran WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']]);
     $catatanTeks = (one('SELECT teks FROM catatan_wali WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']])['teks'] ?? '');
+
+    $tuntas = $mapelList !== [];
+    foreach ($mapelList as $m) {
+        $naCek = nilai_akhir($sid, (int) $m['id'], $c['ta'], $c['semester']);
+        $kkmCek = kkm_mapel((int) $m['id']);
+        if ($naCek === null || $kkmCek === null || $naCek < $kkmCek) {
+            $tuntas = false;
+            break;
+        }
+    }
+    $totalAbsen = (int) ($hadir['sakit'] ?? 0) + (int) ($hadir['izin'] ?? 0) + (int) ($hadir['tka'] ?? 0);
+    $hadirOk = $totalAbsen <= 6;
+    $perkembanganOk = $deskKok !== '' || trim($catatanTeks) !== '';
+    if ($tuntas) {
+        $keputusanTeks = $kelas >= 6
+            ? 'Lulus Sekolah Dasar'
+            : 'Naik Kelas ' . ($romawi[$kelas + 1] ?? ($kelas + 1)) . ' (' . ($angka[$kelas + 1] ?? ($kelas + 1)) . ')';
+    } else {
+        $keputusanTeks = $kelas >= 6 ? 'Tidak Lulus' : 'Tidak Naik Kelas';
+    }
     $no = 0; ?>
 <div class="raport-sheet">
   <div class="rp-title">Kartu Hasil Belajar Peserta Didik</div>
   <div class="rp-sub">Semester <?= $c['semester'] ?> &middot; Tahun Ajaran <?= e($c['ta']) ?></div>
 
-  <?php $romawi = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']; ?>
   <table class="rp-ident">
     <tr>
       <td class="lbl">Nama Murid</td><td class="dd">:</td><td class="val"><b><?= e($s['nama']) ?></b></td>
@@ -109,11 +142,11 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
 
   <?php if ($nilaiEkstra): ?>
   <div class="rp-section-title">Ekstrakurikuler</div>
-  <table class="rp-tbl" style="max-width:560px">
-    <thead><tr><th style="width:42px">No</th><th>Kegiatan</th><th style="width:140px">Predikat</th></tr></thead>
+  <table class="rp-tbl" style="max-width:100%">
+    <thead><tr><th style="width:42px">No</th><th style="width:34%">Kegiatan</th><th style="width:110px">Predikat</th><th>Deskripsi</th></tr></thead>
     <tbody>
       <?php $ne = 0; foreach ($nilaiEkstra as $ek): $ne++; ?>
-        <tr><td class="no"><?= $ne ?></td><td><?= e($ek['nama']) ?></td><td class="nilai"><?= e($ek['predikat']) ?><?= $ek['catatan'] !== '' ? '<br><span style="font-size:11.5px;font-weight:400">' . e($ek['catatan']) . '</span>' : '' ?></td></tr>
+        <tr><td class="no"><?= $ne ?></td><td><?= e($ek['nama']) ?></td><td class="nilai"><?= e($ek['predikat']) ?></td><td><?= e($ek['catatan']) ?></td></tr>
       <?php endforeach; ?>
     </tbody>
   </table>
@@ -138,6 +171,20 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
     <div class="rp-box-title">Tanggapan Orang Tua/ Wali Murid</div>
     <div class="rp-box-body"></div>
   </div>
+
+  <?php if ((int) $c['semester'] === 2): ?>
+  <div class="rp-keputusan">
+    <div class="rp-keputusan-title">KEPUTUSAN :</div>
+    <div class="rp-keputusan-box">
+      <p><b>Berdasarkan evaluasi pencapaian pembelajaran peserta didik telah dinyatakan :</b></p>
+      <div class="rk-row"><span class="rk-label">1). Ketuntasan Tujuan Pembelajaran</span><span>:</span><b><?= $tuntas ? 'Tuntas' : 'Belum Tuntas' ?></b></div>
+      <div class="rk-row"><span class="rk-label">2). Pemenuhan Kehadiran</span><span>:</span><b><?= $hadirOk ? 'Terpenuhi' : 'Tidak Terpenuhi' ?></b></div>
+      <div class="rk-row"><span class="rk-label">3). Perkembangan, Psikologis &amp; Kognitif</span><span>:</span><b><?= $perkembanganOk ? 'Terpenuhi Baik' : 'Perlu Perhatian' ?></b></div>
+      <p class="rk-maka"><b>Maka peserta didik dinyatakan :</b></p>
+      <div class="rk-naik"><b><?= e($keputusanTeks) ?></b></div>
+    </div>
+  </div>
+  <?php endif; ?>
 
   <div class="rp-place"><?= e($p['kota'] ?: '........................') ?>, <?= e(tgl_indo()) ?></div>
   <div class="rp-ttd">
