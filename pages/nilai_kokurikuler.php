@@ -32,12 +32,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $keg = $kegAktif;
     }
     $ketKegInput = trim((string) ($_POST['ket_keg'] ?? ''));
+    $ketDimInput = $_POST['ket_dim'] ?? [];
     $predInput = $_POST['predikat'] ?? [];
     $deskInput = $_POST['desk'] ?? [];
     db()->beginTransaction();
     try {
         if ($keg > 0) {
             update_row('kokurikuler_kegiatan', ['keterangan' => $ketKegInput], 'id=?', [$keg]);
+        }
+        foreach (array_keys($dimensi) as $i => $label) {
+            $t = trim((string) ($ketDimInput[$i] ?? ''));
+            if (one('SELECT idx FROM kokurikuler_dimensi_ket WHERE idx=?', [$i])) {
+                update_row('kokurikuler_dimensi_ket', ['teks' => $t], 'idx=?', [$i]);
+            } else {
+                insert_row('kokurikuler_dimensi_ket', ['idx' => $i, 'teks' => $t]);
+            }
         }
         foreach ($siswas as $s) {
             $sid = (int) $s['id'];
@@ -81,7 +90,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     continue;
                 }
                 $arr = json_decode($row['predikat'] ?: '[]', true) ?: [];
-                $text = generate_deskripsi_kokurikuler($arr);
+                $namaT = 'Ananda';
+                foreach ($siswas as $ss) {
+                    if ((int) $ss['id'] === $tid) {
+                        $namaT = $ss['nama'];
+                    }
+                }
+                $text = generate_deskripsi_kokurikuler($arr, $namaT);
                 if ($text !== '') {
                     update_row('kokurikuler_capaian', ['deskripsi' => $text], 'id=?', [$row['id']]);
                     $tergenerate++;
@@ -107,6 +122,7 @@ foreach ($kegiatanList as $kk) {
         $ketKeg = $kk['keterangan'];
     }
 }
+$ketDimMap = dimensi_keterangan();
 $capMap = [];
 foreach (all('SELECT siswa_id, predikat, deskripsi FROM kokurikuler_capaian WHERE ta=? AND semester=?',
     [$c['ta'], $c['semester']]) as $r) {
@@ -150,8 +166,24 @@ if (!$kegiatanList): ?>
   </div>
 
   <div class="card">
+    <h3>Keterangan per Dimensi Profil Lulusan</h3>
+    <p class="hint">Diisi manual per dimensi (sekali, berlaku untuk semua siswa). Keterangan ini menjadi bagian
+      <i>"yang terlihat dari kemampuan ..."</i> pada deskripsi otomatis rapor untuk siswa yang dimensinya diberi predikat.</p>
+    <div class="form-row">
+      <?php foreach (array_keys($dimensi) as $i => $label): ?>
+        <div class="field">
+          <label><?= e($label) ?></label>
+          <input type="text" name="ket_dim[<?= $i ?>]" value="<?= e($ketDimMap[$i] ?? '') ?>" placeholder="mis. berinisiatif, bekerja sama secara efektif dalam kelompok">
+        </div>
+      <?php endforeach; ?>
+    </div>
+  </div>
+
+  <div class="card">
     <h3>Capaian 8 Dimensi Profil Lulusan &amp; Deskripsi Kokurikuler</h3>
-    <p class="hint">Predikat <b>Berkembang / Cakap / Mahir</b> (Permendikdasmen No. 13 Tahun 2025) menjadi dasar generate deskripsi. Yang tercetak pada raport adalah kolom <b>Deskripsi</b> — bukan predikat, sesuai Panduan Pembelajaran dan Asesmen 2025.</p>
+    <p class="hint">Predikat <b>Berkembang / Cakap / Mahir</b> (Permendikdasmen No. 13 Tahun 2025) menjadi dasar deskripsi otomatis dengan format
+      <i>"{Nama siswa} menunjukkan capaian yang sangat baik/baik/cukup baik dalam [dimensi yang terisi], yang terlihat dari kemampuan [keterangan per dimensi]."</i>
+      Jika lebih dari satu dimensi terisi, kalimat disambung. Yang tercetak pada raport adalah kolom <b>Deskripsi</b> — bukan predikat.</p>
     <div class="table-wrap">
       <table class="tbl">
         <caption>Kelas <?= $c['kelas'] ?> - Semester <?= $c['semester'] ?> - <?= e($c['ta']) ?></caption>

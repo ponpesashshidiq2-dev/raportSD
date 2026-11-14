@@ -68,6 +68,15 @@ function predikat_kokurikuler_ops(): array
     return ['' => '-', 'Berkembang' => 'Berkembang', 'Cakap' => 'Cakap', 'Mahir' => 'Mahir'];
 }
 
+function dimensi_keterangan(): array
+{
+    $map = [];
+    foreach (all('SELECT idx, teks FROM kokurikuler_dimensi_ket') as $r) {
+        $map[(int) $r['idx']] = trim($r['teks']);
+    }
+    return $map;
+}
+
 function gabung_indo(array $a): string
 {
     $a = array_values($a);
@@ -78,27 +87,34 @@ function gabung_indo(array $a): string
     return implode(', ', $a) . ', dan ' . $last;
 }
 
-function generate_deskripsi_kokurikuler(array $predikat): string
+function generate_deskripsi_kokurikuler(array $predikat, string $nama = 'Ananda'): string
 {
-    $teksDimensi = array_values(dimensi_kokurikuler());
-    $kelompok = [];
-    foreach ($teksDimensi as $i => $teks) {
+    $kata = ['Mahir' => 'sangat baik', 'Cakap' => 'baik', 'Berkembang' => 'cukup baik'];
+    $ketDim = dimensi_keterangan();
+    $grup = [];
+    foreach (array_keys(dimensi_kokurikuler()) as $i => $label) {
         $p = trim((string) ($predikat[$i] ?? ''));
-        if (in_array($p, ['Berkembang', 'Cakap', 'Mahir'], true)) {
-            $kelompok[$p][] = $teks;
-        }
-    }
-    if (!$kelompok) {
-        return '';
-    }
-    $baris = [];
-    foreach (['Mahir', 'Cakap', 'Berkembang'] as $p) {
-        if (!isset($kelompok[$p])) {
+        if (!in_array($p, ['Berkembang', 'Cakap', 'Mahir'], true)) {
             continue;
         }
-        $baris[] = 'Pada dimensi ' . gabung_indo($kelompok[$p]) . ', ananda ' . strtolower($p) . '.';
+        $grup[$p][] = ['nama' => $label, 'ket' => trim((string) ($ketDim[$i] ?? ''))];
     }
-    return 'Pada semester ini, ananda menunjukkan capaian yang baik dalam penguatan profil lulusan melalui kegiatan kokurikuler.' . "\n" . implode("\n", $baris);
+    if (!$grup) {
+        return '';
+    }
+    $kalimat = [];
+    foreach (['Mahir', 'Cakap', 'Berkembang'] as $p) {
+        if (!isset($grup[$p])) {
+            continue;
+        }
+        $t = $nama . ' menunjukkan capaian yang ' . $kata[$p] . ' dalam ' . gabung_indo(array_column($grup[$p], 'nama'));
+        $kets = array_values(array_filter(array_column($grup[$p], 'ket'), fn($x) => $x !== ''));
+        if ($kets) {
+            $t .= ', yang terlihat dari kemampuan ' . gabung_indo($kets);
+        }
+        $kalimat[] = $t . '.';
+    }
+    return implode(' ', $kalimat);
 }
 
 function daftar_cp(): array

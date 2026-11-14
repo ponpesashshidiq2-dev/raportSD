@@ -63,7 +63,7 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
     $bagianDim = trim($capaianKok['deskripsi'] ?? '');
     if ($bagianDim === '') {
         $arrPred = json_decode($capaianKok['predikat'] ?? '[]', true) ?: [];
-        $bagianDim = generate_deskripsi_kokurikuler($arrPred);
+        $bagianDim = generate_deskripsi_kokurikuler($arrPred, $s['nama']);
     }
     if ($deskKok === '') {
         $deskKok = $bagianDim;

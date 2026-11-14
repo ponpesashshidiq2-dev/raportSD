@@ -360,6 +360,10 @@ function migrate_kokurikuler(PDO $pdo): void
       deskripsi TEXT NOT NULL DEFAULT '',
       UNIQUE (siswa_id, ta, semester)
     )");
+    $pdo->exec("CREATE TABLE IF NOT EXISTS kokurikuler_dimensi_ket (
+      idx INTEGER PRIMARY KEY,
+      teks TEXT NOT NULL DEFAULT ''
+    )");
     if ((int) $pdo->query('SELECT COUNT(*) FROM kokurikuler_kegiatan')->fetchColumn() === 0) {
         require_once APP_DIR . '/app/kurikulum.php';
         $stmt = $pdo->prepare('INSERT INTO kokurikuler_kegiatan (nama, tujuan, urutan) VALUES (?,?,?)');
