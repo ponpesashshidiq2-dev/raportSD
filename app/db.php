@@ -339,6 +339,7 @@ function migrate_kokurikuler(PDO $pdo): void
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       nama TEXT NOT NULL,
       tujuan TEXT NOT NULL DEFAULT '',
+      keterangan TEXT NOT NULL DEFAULT '',
       urutan INTEGER NOT NULL DEFAULT 0
     )");
     $pdo->exec("CREATE TABLE IF NOT EXISTS kokurikuler_nilai (
@@ -365,6 +366,10 @@ function migrate_kokurikuler(PDO $pdo): void
         foreach (daftar_kokurikuler() as $kk) {
             $stmt->execute([$kk['nama'], $kk['tujuan'], $kk['urutan']]);
         }
+    }
+    $colsKeg = $pdo->query('PRAGMA table_info(kokurikuler_kegiatan)')->fetchAll(PDO::FETCH_ASSOC);
+    if (!array_filter($colsKeg, fn($c) => ($c['name'] ?? '') === 'keterangan')) {
+        $pdo->exec("ALTER TABLE kokurikuler_kegiatan ADD COLUMN keterangan TEXT NOT NULL DEFAULT ''");
     }
 }
 

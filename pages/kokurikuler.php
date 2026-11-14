@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data = [
             'nama' => trim($_POST['nama'] ?? ''),
             'tujuan' => trim($_POST['tujuan'] ?? ''),
+            'keterangan' => trim($_POST['keterangan'] ?? ''),
             'urutan' => (int) ($_POST['urutan'] ?? 0),
         ];
         if ($data['nama'] === '') {
@@ -39,10 +40,12 @@ $edit = null;
 if (!empty($_GET['edit'])) {
     $edit = one('SELECT * FROM kokurikuler_kegiatan WHERE id=?', [(int) $_GET['edit']]);
 }
-$daftar = all('SELECT k.*, (SELECT COUNT(*) FROM kokurikuler_nilai n WHERE n.kegiatan_id=k.id) AS jml
-    FROM kokurikuler_kegiatan k ORDER BY k.urutan, k.nama');
+$daftar = all('SELECT k.* FROM kokurikuler_kegiatan k ORDER BY k.urutan, k.nama');
+$c = ctx();
+$jmlDinilai = (int) scalar("SELECT COUNT(*) FROM kokurikuler_capaian WHERE ta=? AND semester=? AND predikat<>'' AND predikat<>'[]'",
+    [$c['ta'], $c['semester']]);
 
-page_head('Kokurikuler', 'Daftar kegiatan kokurikuler sesuai Permendikdasmen No. 13 Tahun 2025. Keterangan & deskripsi capaian 8 dimensi profil lulusan diinput pada menu Input Nilai Kokurikuler.',
+page_head('Kokurikuler', 'Daftar kegiatan kokurikuler sesuai Permendikdasmen No. 13 Tahun 2025. Keterangan kegiatan (kumulatif) diinput di sini; capaian 8 dimensi profil lulusan diinput pada menu Input Nilai Kokurikuler.',
     '<a class="btn blue" href="index.php?page=nilai_kokurikuler">Input Nilai Kokurikuler</a>');
 echo context_bar();
 ?>
@@ -62,6 +65,12 @@ echo context_bar();
       <textarea name="tujuan" rows="2" placeholder="tulis dengan huruf kecil, memuat kompetensi dan konten target akhir kokurikuler..."><?= e($edit['tujuan'] ?? '') ?></textarea>
     </div>
   </div>
+  <div class="form-row">
+    <div class="field" style="grid-column:1/-1">
+      <label>Keterangan Kegiatan (kumulatif &mdash; berlaku untuk semua siswa, tampil pada rapor jika diisi)</label>
+      <textarea name="keterangan" rows="2" placeholder="mis. Ikut serta dengan tertib dan aktif dalam kegiatan ini"><?= e($edit['keterangan'] ?? '') ?></textarea>
+    </div>
+  </div>
   <div class="page-actions">
     <button class="btn" type="submit"><?= $edit ? 'Simpan Perubahan' : 'Tambah' ?></button>
     <?php if ($edit): ?><a class="btn secondary" href="index.php?page=kokurikuler">Batal</a><?php endif; ?>
@@ -73,16 +82,17 @@ echo context_bar();
 
 <div class="table-wrap">
   <table class="tbl">
-    <thead><tr><th class="center" style="width:40px">No</th><th>Kegiatan Kokurikuler</th><th>Tujuan Akhir</th><th class="center">Siswa Dinilai</th><?php if (is_admin()): ?><th class="center">Aksi</th><?php endif; ?></tr></thead>
+    <thead><tr><th class="center" style="width:40px">No</th><th>Kegiatan Kokurikuler</th><th>Tujuan Akhir</th><th>Keterangan (kumulatif)</th><th class="center">Siswa Dinilai</th><?php if (is_admin()): ?><th class="center">Aksi</th><?php endif; ?></tr></thead>
     <tbody>
     <?php if (!$daftar): ?>
-      <tr><td colspan="5" class="empty">Belum ada kegiatan kokurikuler.</td></tr>
+      <tr><td colspan="6" class="empty">Belum ada kegiatan kokurikuler.</td></tr>
     <?php else: $no = 0; foreach ($daftar as $d): $no++; ?>
       <tr>
         <td class="center"><?= $no ?></td>
         <td class="name-cell"><?= e($d['nama']) ?></td>
         <td class="hint" style="font-size:12.5px"><?= e($d['tujuan']) ?></td>
-        <td class="center"><span class="badge badge-blue"><?= (int) $d['jml'] ?> siswa</span></td>
+        <td class="hint" style="font-size:12.5px"><?= e($d['keterangan']) ?></td>
+        <td class="center"><span class="badge badge-blue"><?= $jmlDinilai ?> siswa</span></td>
         <?php if (is_admin()): ?>
         <td class="center">
           <a class="btn sm secondary" href="index.php?page=kokurikuler&edit=<?= (int) $d['id'] ?>">Ubah</a>
