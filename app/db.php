@@ -182,6 +182,7 @@ CREATE TABLE kokurikuler_capaian (
   semester INTEGER NOT NULL,
   predikat TEXT NOT NULL DEFAULT '',
   deskripsi TEXT NOT NULL DEFAULT '',
+  desk_manual INTEGER NOT NULL DEFAULT 0,
   UNIQUE (siswa_id, ta, semester)
 );
 CREATE INDEX idx_nf_mapel ON nilai_formatif (mapel_id, ta, semester);
@@ -358,6 +359,7 @@ function migrate_kokurikuler(PDO $pdo): void
       semester INTEGER NOT NULL,
       predikat TEXT NOT NULL DEFAULT '',
       deskripsi TEXT NOT NULL DEFAULT '',
+      desk_manual INTEGER NOT NULL DEFAULT 0,
       UNIQUE (siswa_id, ta, semester)
     )");
     $pdo->exec("CREATE TABLE IF NOT EXISTS kokurikuler_dimensi_ket (
@@ -374,6 +376,10 @@ function migrate_kokurikuler(PDO $pdo): void
     $colsKeg = $pdo->query('PRAGMA table_info(kokurikuler_kegiatan)')->fetchAll(PDO::FETCH_ASSOC);
     if (!array_filter($colsKeg, fn($c) => ($c['name'] ?? '') === 'keterangan')) {
         $pdo->exec("ALTER TABLE kokurikuler_kegiatan ADD COLUMN keterangan TEXT NOT NULL DEFAULT ''");
+    }
+    $colsCap = $pdo->query('PRAGMA table_info(kokurikuler_capaian)')->fetchAll(PDO::FETCH_ASSOC);
+    if (!array_filter($colsCap, fn($c) => ($c['name'] ?? '') === 'desk_manual')) {
+        $pdo->exec("ALTER TABLE kokurikuler_capaian ADD COLUMN desk_manual INTEGER NOT NULL DEFAULT 0");
     }
 }
 

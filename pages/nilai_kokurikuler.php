@@ -32,15 +32,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $arr[$i] = $v;
                 }
             }
-            $d = trim((string) ($deskInput[$sid] ?? ''));
-            $adaC = one('SELECT id FROM kokurikuler_capaian WHERE siswa_id=? AND ta=? AND semester=?',
+            $dPosted = trim((string) ($deskInput[$sid] ?? ''));
+            $adaC = one('SELECT id, deskripsi, desk_manual FROM kokurikuler_capaian WHERE siswa_id=? AND ta=? AND semester=?',
                 [$sid, $c['ta'], $c['semester']]);
+            $dLama = $adaC ? trim((string) $adaC['deskripsi']) : '';
+            $manualOld = $adaC && (int) $adaC['desk_manual'] === 1;
+            if ($dPosted === '') {
+                $d = generate_deskripsi_kokurikuler($arr, $s['nama']);
+                $manual = 0;
+            } elseif ($dPosted !== $dLama) {
+                $d = $dPosted;
+                $manual = 1;
+            } else {
+                $d = $manualOld ? $dPosted : generate_deskripsi_kokurikuler($arr, $s['nama']);
+                $manual = $manualOld ? 1 : 0;
+            }
             if (!$arr && $d === '') {
                 if ($adaC) {
                     run('DELETE FROM kokurikuler_capaian WHERE id=?', [$adaC['id']]);
                 }
             } else {
-                $row = ['predikat' => json_encode($arr), 'deskripsi' => $d];
+                $row = ['predikat' => json_encode($arr), 'deskripsi' => $d, 'desk_manual' => $manual];
                 if ($adaC) {
                     update_row('kokurikuler_capaian', $row, 'id=?', [$adaC['id']]);
                 } else {
@@ -72,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $text = generate_deskripsi_kokurikuler($arr, $namaT);
                 if ($text !== '') {
-                    update_row('kokurikuler_capaian', ['deskripsi' => $text], 'id=?', [$row['id']]);
+                    update_row('kokurikuler_capaian', ['deskripsi' => $text, 'desk_manual' => 0], 'id=?', [$row['id']]);
                     $tergenerate++;
                 }
             }
@@ -157,7 +169,7 @@ if (!$siswas): ?>
               </td>
             <?php endforeach; ?>
             <td>
-              <textarea name="desk[<?= $sid ?>]" rows="3" style="width:100%;min-width:280px" placeholder="deskripsi capaian profil lulusan — tekan tombol Generate untuk mengisi otomatis dari predikat"><?= e($cap['deskripsi']) ?></textarea>
+              <textarea name="desk[<?= $sid ?>]" rows="3" style="width:100%;min-width:280px" placeholder="otomatis terisi saat Simpan Semua mengikuti predikat — boleh disunting manual"><?= e($cap['deskripsi']) ?></textarea>
               <button class="btn sm secondary" type="submit" name="generate" value="<?= $sid ?>" title="Generate deskripsi siswa ini dari predikat" style="margin-top:4px">Generate</button>
             </td>
           </tr>
@@ -170,7 +182,8 @@ if (!$siswas): ?>
   <div class="toolbar mt">
     <button class="btn" type="submit">Simpan Semua</button>
     <button class="btn secondary" type="submit" name="generate" value="all">Generate Semua Deskripsi dari Predikat</button>
-    <span class="hint">Pilih <b>-</b> untuk menghapus predikat. Deskripsi hasil generate tetap dapat disunting manual sebelum/sesudah generate.</span>
+    <span class="hint">Pilih <b>-</b> untuk menghapus predikat. Tekan <b>Simpan Semua</b> — Deskripsi yang tidak diedit manual otomatis
+      digenerate ulang mengikuti predikat & keterangan dimensi terbaru sehingga selalu sama dengan rapor.</span>
   </div>
 </form>
 <?php endif; ?>
