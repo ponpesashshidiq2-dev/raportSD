@@ -39,6 +39,7 @@ function menu_items(): array
         ['nilai_ekstra', 'Nilai Ekstrakurikuler', 'nilai_ekstra', []],
         ['kehadiran', 'Kehadiran Siswa', 'kehadiran', []],
         ['catatan_wali', 'Catatan Wali Kelas', 'catatan_wali', []],
+        ['leger', 'Leger Nilai', 'nilai_sumatif', []],
         ['cetak', 'Cetak Raport', 'cetak', []],
         ['sampul', 'Cetak Sampul Raport', 'sampul', []],
         ['backup', 'Backup & Restore', 'backup', []],
