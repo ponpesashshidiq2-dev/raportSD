@@ -24,6 +24,7 @@ function db(): PDO
         migrate_ekstra_deskripsi($pdo);
         migrate_kokurikuler($pdo);
         migrate_tp_kelas($pdo);
+        migrate_jilid($pdo);
     }
     return $pdo;
 }
@@ -359,7 +360,13 @@ function capaian_kompetensi(int $siswa, int $mapel, string $ta, int $sem, string
         [$siswa, $mapel, $ta, $sem]
     );
     if (!$rows) {
-        $cp = one('SELECT deskripsi FROM cp WHERE mapel_id=? AND fase=?', [$mapel, $fase]);
+        $cp = null;
+        if (is_tahsin(one('SELECT nama FROM mapel WHERE id=?', [$mapel]))) {
+            $j = jilid_siswa($siswa, $mapel, $ta, $sem);
+            $cp = one("SELECT deskripsi FROM cp WHERE mapel_id=? AND fase IN ('',?) AND jilid IN (?,0)
+                ORDER BY jilid DESC LIMIT 1", [$mapel, $fase, $j]);
+        }
+        $cp ??= one('SELECT deskripsi FROM cp WHERE mapel_id=? AND fase=? AND jilid=0', [$mapel, $fase]);
         $text = $cp ? $cp['deskripsi'] : 'Belum ada data penilaian formatif.';
         return [
             'tinggi' => 'Capaian pembelajaran: ' . $text,
@@ -398,6 +405,19 @@ function mapel_kelas(int $kelas): array
         'SELECT * FROM mapel WHERE aktif=1 AND ? BETWEEN kelas_min AND kelas_max ORDER BY muatan, urutan, nama',
         [$kelas]
     );
+}
+
+function is_tahsin(?array $mapel): bool
+{
+    return is_array($mapel)
+        && str_contains(mb_strtolower((string) ($mapel['nama'] ?? '')), 'tahsin');
+}
+
+function jilid_siswa(int $siswa, int $mapel, string $ta, int $sem): int
+{
+    $v = scalar('SELECT jilid FROM siswa_jilid WHERE siswa_id=? AND mapel_id=? AND ta=? AND semester=?',
+        [$siswa, $mapel, $ta, $sem]);
+    return $v === null ? 0 : (int) $v;
 }
 
 function walikelas(int $kelas, ?int $semester = null): array

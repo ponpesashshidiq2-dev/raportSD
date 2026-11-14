@@ -52,8 +52,9 @@ CREATE TABLE cp (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   mapel_id INTEGER NOT NULL,
   fase TEXT NOT NULL,
+  jilid INTEGER NOT NULL DEFAULT 0,
   deskripsi TEXT NOT NULL,
-  UNIQUE (mapel_id, fase)
+  UNIQUE (mapel_id, fase, jilid)
 );
 CREATE TABLE tp (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,7 +64,8 @@ CREATE TABLE tp (
   semester INTEGER NOT NULL DEFAULT 1,
   kode TEXT NOT NULL DEFAULT '',
   deskripsi TEXT NOT NULL,
-  urutan INTEGER NOT NULL DEFAULT 0
+  urutan INTEGER NOT NULL DEFAULT 0,
+  jilid INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE siswa (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -168,6 +170,15 @@ CREATE TABLE catatan_wali (
   teks TEXT NOT NULL DEFAULT '',
   UNIQUE (siswa_id, ta, semester)
 );
+CREATE TABLE siswa_jilid (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  siswa_id INTEGER NOT NULL,
+  mapel_id INTEGER NOT NULL,
+  ta TEXT NOT NULL,
+  semester INTEGER NOT NULL,
+  jilid INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (siswa_id, mapel_id, ta, semester)
+);
 CREATE TABLE kokurikuler_kegiatan (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   nama TEXT NOT NULL,
@@ -198,6 +209,7 @@ CREATE INDEX idx_ns_mapel ON nilai_sumatif (mapel_id, ta, semester);
 CREATE INDEX idx_siswa_kelas ON siswa (kelas, status);
 CREATE INDEX idx_tp_mapel ON tp (mapel_id, fase);
 CREATE INDEX idx_tp_ctx ON tp (mapel_id, kelas, semester);
+CREATE INDEX idx_tp_jilid ON tp (mapel_id, semester, jilid);
 SQL;
 }
 
@@ -446,5 +458,40 @@ function migrate_tp_kelas(PDO $pdo): void
         if ($new && (int) $new !== (int) $tpid) {
             $updNf->execute([(int) $new, (int) $tpid]);
         }
+    }
+}
+
+function migrate_jilid(PDO $pdo): void
+{
+    $pdo->exec("CREATE TABLE IF NOT EXISTS siswa_jilid (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      siswa_id INTEGER NOT NULL,
+      mapel_id INTEGER NOT NULL,
+      ta TEXT NOT NULL,
+      semester INTEGER NOT NULL,
+      jilid INTEGER NOT NULL DEFAULT 0,
+      UNIQUE (siswa_id, mapel_id, ta, semester)
+    )");
+
+    $tpCols = array_map(fn($c) => $c['name'], $pdo->query('PRAGMA table_info(tp)')->fetchAll(PDO::FETCH_ASSOC));
+    if ($tpCols && !in_array('jilid', $tpCols, true)) {
+        $pdo->exec('ALTER TABLE tp ADD COLUMN jilid INTEGER NOT NULL DEFAULT 0');
+        $pdo->exec('CREATE INDEX IF NOT EXISTS idx_tp_jilid ON tp (mapel_id, semester, jilid)');
+    }
+
+    $cpCols = array_map(fn($c) => $c['name'], $pdo->query('PRAGMA table_info(cp)')->fetchAll(PDO::FETCH_ASSOC));
+    if ($cpCols && !in_array('jilid', $cpCols, true)) {
+        $pdo->exec('CREATE TABLE cp_jilid_migrate (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          mapel_id INTEGER NOT NULL,
+          fase TEXT NOT NULL,
+          jilid INTEGER NOT NULL DEFAULT 0,
+          deskripsi TEXT NOT NULL,
+          UNIQUE (mapel_id, fase, jilid)
+        )');
+        $pdo->exec('INSERT INTO cp_jilid_migrate (id, mapel_id, fase, jilid, deskripsi)
+            SELECT id, mapel_id, fase, 0, deskripsi FROM cp');
+        $pdo->exec('DROP TABLE cp');
+        $pdo->exec('ALTER TABLE cp_jilid_migrate RENAME TO cp');
     }
 }

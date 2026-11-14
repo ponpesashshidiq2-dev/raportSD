@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->beginTransaction();
         try {
             $n = 0;
-            foreach (['nilai_formatif', 'nilai_sumatif', 'nilai_ekstra', 'kokurikuler_nilai', 'kokurikuler_capaian', 'kehadiran', 'sumatif_jenis'] as $t) {
+            foreach (['nilai_formatif', 'nilai_sumatif', 'nilai_ekstra', 'kokurikuler_nilai', 'kokurikuler_capaian', 'kehadiran', 'sumatif_jenis', 'siswa_jilid'] as $t) {
                 $n += run('DELETE FROM ' . $t);
             }
             db()->commit();
