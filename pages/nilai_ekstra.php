@@ -100,7 +100,8 @@ if (!$ekstraList): ?>
   <?= csrf_field() ?>
   <div class="card">
     <h3>Deskripsi Ekstrakurikuler — diisi sekali per kegiatan</h3>
-    <p class="hint">Teks yang sama tampil pada raport untuk semua siswa. Kosongkan untuk tidak menampilkan deskripsi.</p>
+    <p class="hint">Diisi sebagai lanjutan kalimat pada raport: <i>"[Nama Siswa] memperoleh predikat [nilai] ..."</i> — teks yang sama
+      tampil untuk semua siswa. Kosongkan untuk tidak menampilkan keterangan.</p>
     <?php foreach ($ekstraList as $ek): ?>
       <div class="field" style="margin-top:8px">
         <label><?= e($ek['nama']) ?></label>

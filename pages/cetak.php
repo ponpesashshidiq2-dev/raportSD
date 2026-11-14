@@ -146,9 +146,11 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
       <?php $ne = 0; foreach ($nilaiEkstra as $ek): $ne++;
           $deskEk = trim($ekDeskMap[(int) $ek['eid']] ?? '');
           if ($deskEk === '') {
-              $deskEk = (string) $ek['catatan'];
-          } ?>
-        <tr><td class="no"><?= $ne ?></td><td><?= e($ek['nama']) ?></td><td class="nilai"><?= e($ek['predikat']) ?></td><td><?= e($deskEk) ?></td></tr>
+              $deskEk = trim((string) $ek['catatan']);
+          }
+          $ketEk = e($s['nama']) . ' memperoleh predikat ' . e($ek['predikat'])
+              . ($deskEk !== '' ? ' ' . e($deskEk) : '.'); ?>
+        <tr><td class="no"><?= $ne ?></td><td><?= e($ek['nama']) ?></td><td class="nilai"><?= e($ek['predikat']) ?></td><td><?= $ketEk ?></td></tr>
       <?php endforeach; ?>
     </tbody>
   </table>
