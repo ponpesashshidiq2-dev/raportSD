@@ -48,8 +48,6 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
 
 <?php foreach ($terpilih as $s):
     $sid = (int) $s['id'];
-    $nilaiKok = all('SELECT k.nama, n.keterangan FROM kokurikuler_nilai n JOIN kokurikuler_kegiatan k ON k.id=n.kegiatan_id
-        WHERE n.siswa_id=? AND n.ta=? AND n.semester=? ORDER BY k.urutan, k.nama', [$sid, $c['ta'], $c['semester']]);
     $capaianKok = one('SELECT deskripsi FROM kokurikuler_capaian WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']]);
     $deskKok = $capaianKok['deskripsi'] ?? '';
     $nilaiEkstra = all('SELECT e.nama, n.predikat, n.catatan FROM nilai_ekstra n JOIN ekstra e ON e.id=n.ekstra_id
@@ -58,30 +56,27 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
     $catatanTeks = (one('SELECT teks FROM catatan_wali WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']])['teks'] ?? '');
     $no = 0; ?>
 <div class="raport-sheet">
-  <div class="rp-head">
-    <div class="rp-school"><?= e($p['sekolah']) ?></div>
-    <div class="rp-addr"><?= e($p['alamat']) ?></div>
-    <div class="rp-addr">
-      <?php $info = [];
-      if ($p['npsn']) $info[] = 'NPSN: ' . $p['npsn'];
-      if ($p['telp']) $info[] = 'Telp: ' . $p['telp'];
-      if ($p['email']) $info[] = 'Email: ' . $p['email'];
-      echo e(implode(' | ', $info)); ?>
-    </div>
-  </div>
-
   <div class="rp-title">Kartu Hasil Belajar Peserta Didik</div>
   <div class="rp-sub">Semester <?= $c['semester'] ?> &middot; Tahun Ajaran <?= e($c['ta']) ?></div>
 
+  <?php $romawi = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']; ?>
   <table class="rp-ident">
-    <tr><td class="lbl">Nama Peserta Didik</td><td class="dd">:</td><td class="val"><b><?= e($s['nama']) ?></b></td></tr>
-    <tr><td class="lbl">NISN</td><td class="dd">:</td><td class="val"><?= e($s['nisn']) ?></td></tr>
-    <tr><td class="lbl">Sekolah</td><td class="dd">:</td><td class="val"><?= e($p['sekolah']) ?></td></tr>
-    <tr><td class="lbl">Alamat</td><td class="dd">:</td><td class="val"><?= e($s['alamat'] ?: $p['alamat']) ?></td></tr>
-    <tr><td class="lbl">Kelas</td><td class="dd">:</td><td class="val">Kelas <?= $kelas ?></td></tr>
-    <tr><td class="lbl">Fase</td><td class="dd">:</td><td class="val"><?= e($c['fase']) ?></td></tr>
-    <tr><td class="lbl">Semester</td><td class="dd">:</td><td class="val"><?= $c['semester'] ?> (<?= $c['semester'] === 1 ? 'Ganjil' : 'Genap' ?>)</td></tr>
-    <tr><td class="lbl">Tahun Ajaran</td><td class="dd">:</td><td class="val"><?= e($c['ta']) ?></td></tr>
+    <tr>
+      <td class="lbl">Nama Murid</td><td class="dd">:</td><td class="val"><b><?= e($s['nama']) ?></b></td>
+      <td class="lbl lbl2">Kelas</td><td class="dd">:</td><td class="val"><?= e($romawi[$kelas] ?? $kelas) ?></td>
+    </tr>
+    <tr>
+      <td class="lbl">NISN</td><td class="dd">:</td><td class="val"><?= e($s['nisn']) ?></td>
+      <td class="lbl lbl2">Fase</td><td class="dd">:</td><td class="val"><?= e($c['fase']) ?></td>
+    </tr>
+    <tr>
+      <td class="lbl">Sekolah</td><td class="dd">:</td><td class="val"><?= e($p['sekolah']) ?></td>
+      <td class="lbl lbl2">Semester</td><td class="dd">:</td><td class="val"><?= $c['semester'] ?> (<?= $c['semester'] === 1 ? 'Ganjil' : 'Genap' ?>)</td>
+    </tr>
+    <tr>
+      <td class="lbl">Alamat</td><td class="dd">:</td><td class="val"><?= e($s['alamat'] ?: $p['alamat']) ?></td>
+      <td class="lbl lbl2">Tahun Ajaran</td><td class="dd">:</td><td class="val"><?= e($c['ta']) ?></td>
+    </tr>
   </table>
 
   <table class="rp-tbl">
@@ -96,38 +91,14 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
     <tbody>
     <?php foreach ($mapelList as $m): $no++;
         $na = nilai_akhir($sid, (int) $m['id'], $c['ta'], $c['semester']);
-        $cap = capaian_kompetensi($sid, (int) $m['id'], $c['ta'], $c['semester'], $c['fase']);
-        $kkm = $m['kkm'] !== null && $m['kkm'] !== '' ? (int) $m['kkm'] : null; ?>
+        $cap = capaian_kompetensi($sid, (int) $m['id'], $c['ta'], $c['semester'], $c['fase']); ?>
       <tr>
         <td class="no"><?= $no ?></td>
-        <td class="mapel"><?= e($m['nama']) ?><?php if ($kkm !== null): ?><div style="font-size:11px;font-weight:400">KKM <?= $kkm ?> &middot; <?= e(predikat($na)) ?></div><?php endif; ?></td>
+        <td class="mapel"><?= e($m['nama']) ?><?php if ($na !== null): ?><div style="font-size:11px;font-weight:400">Predikat: <?= e(predikat($na)) ?></div><?php endif; ?></td>
         <td class="nilai"><?= $na !== null ? e(format_nilai($na)) : '-' ?></td>
         <td class="capai"><?= e($cap['tinggi']) ?><br><?= e($cap['rendah']) ?></td>
       </tr>
     <?php endforeach; ?>
-    </tbody>
-  </table>
-
-  <table class="rp-tbl" style="margin-top:14px">
-    <thead>
-      <tr>
-        <th style="width:46px">No.</th>
-        <th style="width:42%">Kokurikuler</th>
-        <th>Keterangan</th>
-      </tr>
-    </thead>
-    <tbody>
-    <?php if ($nilaiKok): $nk = 0; foreach ($nilaiKok as $kk): $nk++; ?>
-      <tr>
-        <td class="no"><?= $nk ?></td>
-        <td><?= e($kk['nama']) ?></td>
-        <td><?= e($kk['keterangan']) ?></td>
-      </tr>
-    <?php endforeach; else: ?>
-      <tr><td class="no">1</td><td></td><td></td></tr>
-      <tr><td class="no">2</td><td></td><td></td></tr>
-      <tr><td class="no">dst.</td><td></td><td></td></tr>
-    <?php endif; ?>
     </tbody>
   </table>
 
@@ -136,28 +107,17 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
     <div class="rp-box-body"><?= $deskKok !== '' ? nl2br(e($deskKok)) : '' ?></div>
   </div>
 
-  <table class="rp-tbl" style="margin-top:14px">
-    <thead>
-      <tr>
-        <th style="width:46px">No.</th>
-        <th style="width:42%">Ekstrakurikuler</th>
-        <th>Keterangan</th>
-      </tr>
-    </thead>
+  <?php if ($nilaiEkstra): ?>
+  <div class="rp-section-title">Ekstrakurikuler</div>
+  <table class="rp-tbl" style="max-width:560px">
+    <thead><tr><th style="width:42px">No</th><th>Kegiatan</th><th style="width:140px">Predikat</th></tr></thead>
     <tbody>
-    <?php if ($nilaiEkstra): $ne = 0; foreach ($nilaiEkstra as $ek): $ne++; ?>
-      <tr>
-        <td class="no"><?= $ne ?></td>
-        <td><?= e($ek['nama']) ?></td>
-        <td><?= e($ek['predikat']) ?><?= $ek['catatan'] !== '' ? '<br><span style="font-size:11.5px;font-weight:400">' . e($ek['catatan']) . '</span>' : '' ?></td>
-      </tr>
-    <?php endforeach; else: ?>
-      <tr><td class="no">1</td><td></td><td></td></tr>
-      <tr><td class="no">2</td><td></td><td></td></tr>
-      <tr><td class="no">dst.</td><td></td><td></td></tr>
-    <?php endif; ?>
+      <?php $ne = 0; foreach ($nilaiEkstra as $ek): $ne++; ?>
+        <tr><td class="no"><?= $ne ?></td><td><?= e($ek['nama']) ?></td><td class="nilai"><?= e($ek['predikat']) ?><?= $ek['catatan'] !== '' ? '<br><span style="font-size:11.5px;font-weight:400">' . e($ek['catatan']) . '</span>' : '' ?></td></tr>
+      <?php endforeach; ?>
     </tbody>
   </table>
+  <?php endif; ?>
 
   <div class="rp-dua">
     <div class="rp-box">

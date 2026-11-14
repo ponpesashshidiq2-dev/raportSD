@@ -148,9 +148,10 @@ table.tbl tr:last-child td{border-bottom:none}
 .rp-sub{text-align:center;font-size:13px;margin-bottom:14px}
 table.rp-ident{width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:16px}
 table.rp-ident td{padding:4px 6px;vertical-align:top}
-table.rp-ident td.lbl{width:150px;font-weight:700}
+table.rp-ident td.lbl{width:130px;font-weight:700}
+table.rp-ident td.lbl2{width:120px;padding-left:40px}
 table.rp-ident td.dd{width:14px;text-align:center}
-table.rp-ident td.val{border-bottom:1px dotted #475569}
+table.rp-ident td.val{border-bottom:1px dotted #475569;width:32%}
 table.rp-tbl{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px}
 table.rp-tbl th,table.rp-tbl td{border:1px solid #000;padding:6px 8px;vertical-align:top}
 table.rp-tbl thead th{background:#e2e8f0;text-align:center;font-size:12.5px}
