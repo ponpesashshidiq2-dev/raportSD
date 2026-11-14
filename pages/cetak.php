@@ -15,7 +15,6 @@ $terpilih = array_values($terpilih);
 
 $mapelList = mapel_raport($kelas);
 $walikelas = walikelas($kelas, (int) $c['semester']);
-$kegKetList = all('SELECT nama, keterangan FROM kokurikuler_kegiatan ORDER BY urutan, nama');
 
 page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] . ' - Semester ' . $c['semester'] . ' - TA ' . $c['ta'],
     '<button class="btn" id="printBtn" type="button">Cetak / Simpan PDF</button>');
@@ -52,23 +51,10 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
     $romawi = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
     $angka = ['', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh'];
     $capaianKok = one('SELECT predikat, deskripsi FROM kokurikuler_capaian WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']]) ?: [];
-    $deskKok = '';
-    foreach ($kegKetList as $kk) {
-        $ket = trim($kk['keterangan']);
-        if ($ket === '') {
-            continue;
-        }
-        $deskKok .= ($deskKok !== '' ? ' ' : '') . 'Pada kegiatan ' . $kk['nama'] . ', ' . rtrim($ket, ". \t") . '.';
-    }
-    $bagianDim = trim($capaianKok['deskripsi'] ?? '');
-    if ($bagianDim === '') {
-        $arrPred = json_decode($capaianKok['predikat'] ?? '[]', true) ?: [];
-        $bagianDim = generate_deskripsi_kokurikuler($arrPred, $s['nama']);
-    }
+    $deskKok = trim($capaianKok['deskripsi'] ?? '');
     if ($deskKok === '') {
-        $deskKok = $bagianDim;
-    } elseif ($bagianDim !== '') {
-        $deskKok .= "\n" . $bagianDim;
+        $arrPred = json_decode($capaianKok['predikat'] ?? '[]', true) ?: [];
+        $deskKok = generate_deskripsi_kokurikuler($arrPred, $s['nama']);
     }
     $nilaiEkstra = all('SELECT e.nama, n.predikat, n.catatan FROM nilai_ekstra n JOIN ekstra e ON e.id=n.ekstra_id
         WHERE n.siswa_id=? AND n.ta=? AND n.semester=? ORDER BY e.urutan, e.nama', [$sid, $c['ta'], $c['semester']]);

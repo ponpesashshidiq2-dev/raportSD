@@ -1,45 +1,19 @@
 <?php
 $c = ctx();
 $siswas = all("SELECT id, nama FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$c['kelas']]);
-$kegiatanList = all('SELECT * FROM kokurikuler_kegiatan ORDER BY urutan, nama');
 $dimensi = dimensi_kokurikuler();
 $ops = predikat_kokurikuler_ops();
-
-$kegAktif = (int) ($_GET['keg'] ?? 0);
-$adaKegiatanAktif = false;
-foreach ($kegiatanList as $kk) {
-    if ((int) $kk['id'] === $kegAktif) {
-        $adaKegiatanAktif = true;
-    }
-}
-if (!$adaKegiatanAktif) {
-    $kegAktif = $kegiatanList ? (int) $kegiatanList[0]['id'] : 0;
-}
-$kegNama = '';
-foreach ($kegiatanList as $kk) {
-    if ((int) $kk['id'] === $kegAktif) {
-        $kegNama = $kk['nama'];
-    }
-}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!can_edit()) {
         flash_set('error', 'Anda tidak memiliki akses untuk menginput nilai kokurikuler.');
         redirect('nilai_kokurikuler');
     }
-    $keg = (int) ($_POST['keg'] ?? 0);
-    if (!one('SELECT id FROM kokurikuler_kegiatan WHERE id=?', [$keg])) {
-        $keg = $kegAktif;
-    }
-    $ketKegInput = trim((string) ($_POST['ket_keg'] ?? ''));
     $ketDimInput = $_POST['ket_dim'] ?? [];
     $predInput = $_POST['predikat'] ?? [];
     $deskInput = $_POST['desk'] ?? [];
     db()->beginTransaction();
     try {
-        if ($keg > 0) {
-            update_row('kokurikuler_kegiatan', ['keterangan' => $ketKegInput], 'id=?', [$keg]);
-        }
         foreach (array_keys($dimensi) as $i => $label) {
             $t = trim((string) ($ketDimInput[$i] ?? ''));
             if (one('SELECT idx FROM kokurikuler_dimensi_ket WHERE idx=?', [$i])) {
@@ -113,15 +87,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         db()->rollBack();
         flash_set('error', 'Gagal menyimpan: ' . $ex->getMessage());
     }
-    redirect('nilai_kokurikuler', ['keg' => $keg]);
+    redirect('nilai_kokurikuler');
 }
 
-$ketKeg = '';
-foreach ($kegiatanList as $kk) {
-    if ((int) $kk['id'] === $kegAktif) {
-        $ketKeg = $kk['keterangan'];
-    }
-}
 $ketDimMap = dimensi_keterangan();
 $capMap = [];
 foreach (all('SELECT siswa_id, predikat, deskripsi FROM kokurikuler_capaian WHERE ta=? AND semester=?',
@@ -133,37 +101,13 @@ foreach (all('SELECT siswa_id, predikat, deskripsi FROM kokurikuler_capaian WHER
 }
 
 page_head('Input Nilai Kokurikuler',
-    'Keterangan kegiatan (kumulatif, satu untuk semua siswa), capaian 8 Dimensi Profil Lulusan (Berkembang/Cakap/Mahir), dan deskripsi kokurikuler yang tercetak pada raport.');
+    'Keterangan per dimensi, capaian 8 Dimensi Profil Lulusan (Berkembang/Cakap/Mahir), dan deskripsi kokurikuler yang tercetak pada raport.');
 echo context_bar();
-if (!$kegiatanList): ?>
-  <div class="alert alert-warning">Belum ada kegiatan kokurikuler. Tambahkan pada menu <a href="index.php?page=kokurikuler">Kokurikuler</a>.</div>
-<?php elseif (!$siswas): ?>
+if (!$siswas): ?>
   <div class="card empty">Belum ada siswa pada kelas <?= $c['kelas'] ?>. <a href="index.php?page=siswa">Tambah data siswa</a>.</div>
 <?php else: ?>
-<div class="toolbar">
-  <form method="get" action="index.php" style="display:flex;gap:10px;align-items:center;margin:0">
-    <input type="hidden" name="page" value="nilai_kokurikuler">
-    <label><b>Pilih Kegiatan</b></label>
-    <select name="keg" onchange="this.form.submit()">
-      <?php foreach ($kegiatanList as $kk): ?>
-        <option value="<?= (int) $kk['id'] ?>"<?= (int) $kk['id'] === $kegAktif ? ' selected' : '' ?>><?= e($kk['nama']) ?></option>
-      <?php endforeach; ?>
-    </select>
-    <span class="hint">Kegiatan dikelola pada menu <a href="index.php?page=kokurikuler">Kokurikuler</a></span>
-  </form>
-</div>
-
 <form method="post" action="index.php?page=nilai_kokurikuler">
   <?= csrf_field() ?>
-  <input type="hidden" name="keg" value="<?= $kegAktif ?>">
-
-  <div class="card">
-    <h3>Keterangan Kegiatan &middot; <?= e($kegNama) ?></h3>
-    <p class="hint">Kumulatif (berlaku untuk semua siswa). Jika diisi, teks ini tampil pada kolom Deskripsi Kokurikuler rapor.</p>
-    <div class="field">
-      <textarea name="ket_keg" rows="3" placeholder="mis. Ikut serta dengan tertib dan aktif dalam kegiatan ini" style="min-width:480px"><?= e($ketKeg) ?></textarea>
-    </div>
-  </div>
 
   <div class="card">
     <h3>Keterangan per Dimensi Profil Lulusan</h3>
