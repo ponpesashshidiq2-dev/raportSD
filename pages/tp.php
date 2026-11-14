@@ -217,8 +217,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($aksi === 'tp_import') {
-        if (!can_edit()) {
-            flash_set('error', 'Anda tidak memiliki akses untuk mengimpor TP.');
+        if (!is_admin()) {
+            flash_set('error', 'Hanya administrator yang dapat mengimpor TP. Pengguna lain tidak memiliki akses import.');
             redirect('tp');
         }
         if (empty($_FILES['file']['tmp_name']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
@@ -292,7 +292,7 @@ echo context_bar();
   <span class="badge badge-blue">Fase <?= e($faseSel) ?></span>
 </form>
 
-<?php if (can_edit()): ?>
+<?php if (is_admin()): ?>
 <form class="card" method="post" action="index.php?page=tp" enctype="multipart/form-data">
   <?= csrf_field() ?>
   <input type="hidden" name="aksi" value="tp_import">
