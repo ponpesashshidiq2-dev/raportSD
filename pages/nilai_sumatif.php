@@ -1,16 +1,14 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-if ($kaKunci !== null) {
-    $c['kelas'] = $kaKunci;
-}
+$kelasSiswa = $kaKunci ?? (int) $c['kelas'];
 $mapelList = mapel_kelas($c['kelas']);
 $mapelId = (int) ($_GET['mapel'] ?? 0);
 if ($mapelId <= 0 && $mapelList) {
     $mapelId = (int) $mapelList[0]['id'];
 }
 $mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;
-$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$c['kelas']]);
+$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$kelasSiswa]);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!can_edit()) {
@@ -96,7 +94,7 @@ $jenisList = $mapelId > 0 ? all('SELECT * FROM sumatif_jenis WHERE mapel_id=? AN
     [$mapelId, $c['ta'], $c['semester']]) : [];
 
 page_head('Input Nilai Sumatif', 'Buat penilaian sumatif (mis. harian, tengah semester, akhir semester) lalu isi nilainya.');
-echo context_bar($kaKunci);
+echo context_bar();
 echo angkatan_lock_alert();
 ?>
 <form class="toolbar" method="get" action="index.php">
@@ -132,7 +130,7 @@ echo angkatan_lock_alert();
 <?php if (!$jenisList): ?>
   <div class="card empty">Belum ada penilaian sumatif untuk mapel ini pada <?= e($c['ta']) ?> Semester <?= $c['semester'] ?>. Tambahkan kolom penilaian terlebih dahulu.</div>
 <?php elseif (!$siswas): ?>
-  <div class="card empty">Belum ada siswa pada kelas <?= $c['kelas'] ?>. <a href="index.php?page=siswa">Tambah data siswa</a>.</div>
+  <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $c['kelas']) ?></div>
 <?php else:
   $existing = [];
   foreach (all('SELECT jenis_id, siswa_id, nilai FROM nilai_sumatif WHERE mapel_id=? AND ta=? AND semester=?',

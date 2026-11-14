@@ -1,9 +1,7 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-if ($kaKunci !== null) {
-    $c['kelas'] = $kaKunci;
-}
+$kelasSiswa = $kaKunci ?? (int) $c['kelas'];
 $mapelList = mapel_kelas($c['kelas']);
 $mapelId = (int) ($_GET['mapel'] ?? 0);
 if ($mapelId <= 0 && $mapelList) {
@@ -20,7 +18,7 @@ if ($tpSel && !array_filter($allTps, fn($t) => (int) $t['id'] === $tpSel)) {
     $tpSel = 0;
 }
 $tps = $tpSel ? array_values(array_filter($allTps, fn($t) => (int) $t['id'] === $tpSel)) : $allTps;
-$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$c['kelas']]);
+$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$kelasSiswa]);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!can_edit()) {
@@ -108,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 page_head('Input Nilai Formatif', 'Nilai setiap Tujuan Pembelajaran (TP) per siswa pada konteks aktif.');
-echo context_bar($kaKunci);
+echo context_bar();
 echo angkatan_lock_alert();
 ?>
 <form class="toolbar" method="get" action="index.php">
@@ -148,7 +146,7 @@ echo angkatan_lock_alert();
       ? 'pada Jilid ' . $jilidSel . ' Semester ' . $c['semester']
       : 'pada Kelas ' . $c['kelas'] . ' Semester ' . $c['semester'] ?>. Isi terlebih dahulu pada menu <a href="index.php?page=tp&mapel=<?= $mapelId ?>&kelas=<?= $c['kelas'] ?>&sem=<?= $c['semester'] ?>&jilid=<?= $jilidSel ?>">Tujuan Pembelajaran</a>.</div>
 <?php elseif (!$siswas): ?>
-  <div class="card empty">Belum ada siswa pada kelas <?= $c['kelas'] ?>. <a href="index.php?page=siswa">Tambah data siswa</a>.</div>
+  <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $c['kelas']) ?></div>
 <?php else:
   $existing = [];
   foreach (all('SELECT tp_id, siswa_id, nilai FROM nilai_formatif WHERE mapel_id=? AND ta=? AND semester=?',

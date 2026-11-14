@@ -278,10 +278,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $taStart = (int) substr(profil()['ta'], 0, 4);
             $kel = $taStart - $a + 1;
             flash_set('success', $kel >= 1 && $kel <= 6
-                ? "Angkatan $a tersimpan — Data Siswa dan 6 halaman input nilai terkunci ke siswa angkatan ini (saat ini Kelas $kel)."
+                ? "Angkatan $a tersimpan — daftar siswa Data Siswa & input nilai terkunci ke angkatan ini (siswa Kelas $kel); kelas konteks tetap bebas diganti."
                 : "Angkatan $a tersimpan — tidak ada siswa aktif angkatan ini pada tahun ajaran berjalan.");
         } else {
-            flash_set('success', 'Angkatan dikosongkan — Data Siswa dan input nilai kembali mengikuti konteks kelas.');
+            flash_set('success', 'Angkatan dikosongkan — daftar siswa kembali mengikuti kelas konteks.');
         }
         redirect('siswa');
     }
@@ -486,7 +486,7 @@ page_head('Data Siswa', 'Kelola data peserta didik — daftar terkunci sesuai an
   <?= csrf_field() ?>
   <input type="hidden" name="aksi" value="angkatan">
   <h3>Angkatan Saya</h3>
-  <div class="hint mb">Setiap pengguna hanya menampilkan siswa <b>satu angkatan</b> pada menu Data Siswa. Isi tahun angkatan (mis. 2025) — daftar <b>tidak berubah</b> saat ganti kelas maupun semester konteks, dan siswa angkatan lain tidak dapat ditampilkan. Kunci ini juga berlaku pada <b>6 halaman input nilai</b> (formatif, sumatif, kehadiran, kokurikuler, ekstrakurikuler, catatan wali): daftar siswa &amp; kelas penilaian tetap walau kelas/semester diganti. Cetak raport tetap mengikuti konteks kelas.</div>
+  <div class="hint mb">Setiap pengguna hanya menampilkan siswa <b>satu angkatan</b> pada menu Data Siswa. Isi tahun angkatan (mis. 2025) — daftar <b>tidak berubah</b> saat ganti kelas maupun semester konteks, dan siswa angkatan lain tidak dapat ditampilkan. Kunci ini juga berlaku pada <b>6 halaman input nilai &amp; Leger Nilai</b>: daftar siswa tetap terkunci ke angkatan ini walau kelas/semester diganti — <b>kelas konteks tetap bebas</b>, nilai yang tampil mengikuti kelas yang dibuka.</div>
   <div class="toolbar" style="margin:0">
     <label style="margin:0">Angkatan</label>
     <input type="number" name="angkatan" min="2000" max="2100" value="<?= $myAng > 0 ? $myAng : '' ?>" placeholder="cth. 2025" style="width:130px">

@@ -1,10 +1,8 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-if ($kaKunci !== null) {
-    $c['kelas'] = $kaKunci;
-}
-$siswas = all("SELECT id, nama FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$c['kelas']]);
+$kelasSiswa = $kaKunci ?? (int) $c['kelas'];
+$siswas = all("SELECT id, nama FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$kelasSiswa]);
 $dimensi = dimensi_kokurikuler();
 $ops = predikat_kokurikuler_ops();
 
@@ -118,10 +116,10 @@ foreach (all('SELECT siswa_id, predikat, deskripsi FROM kokurikuler_capaian WHER
 
 page_head('Input Nilai Kokurikuler',
     'Keterangan per dimensi, capaian 8 Dimensi Profil Lulusan (Berkembang/Cakap/Mahir), dan deskripsi kokurikuler yang tercetak pada raport.');
-echo context_bar($kaKunci);
+echo context_bar();
 echo angkatan_lock_alert();
 if (!$siswas): ?>
-  <div class="card empty">Belum ada siswa pada kelas <?= $c['kelas'] ?>. <a href="index.php?page=siswa">Tambah data siswa</a>.</div>
+  <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $c['kelas']) ?></div>
 <?php else: ?>
 <form method="post" action="index.php?page=nilai_kokurikuler">
   <?= csrf_field() ?>

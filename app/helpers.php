@@ -294,9 +294,17 @@ function angkatan_lock_alert(): string
     }
     $ang = (int) (user()['angkatan'] ?? 0);
     if ($ka >= 1 && $ka <= 6) {
-        return '<div class="alert alert-info">Akun ini terkunci ke <b>angkatan ' . $ang . '</b> (Kelas ' . $ka . ') — daftar siswa input nilai tetap sama walau kelas/semester diganti.</div>';
+        return '<div class="alert alert-info">Daftar siswa akun ini terkunci ke <b>angkatan ' . $ang . '</b> (siswa Kelas ' . $ka . ') — tetap tampil walau kelas/semester diganti; nilai mengikuti kelas yang dibuka.</div>';
     }
     return '<div class="alert alert-warning">Akun ini terkunci ke <b>angkatan ' . $ang . '</b>, tetapi kelas angkatan di luar 1-6 sehingga tidak ada siswa yang cocok. Periksa tahun angkatan pada menu <a href="index.php?page=siswa">Data Siswa</a>.</div>';
+}
+
+function teks_kosong_siswa(?int $kaKunci, int $kelas): string
+{
+    if ($kaKunci !== null) {
+        return 'Belum ada siswa pada daftar angkatan Anda. Periksa tahun angkatan pada menu <a href="index.php?page=siswa">Data Siswa</a>.';
+    }
+    return 'Belum ada siswa pada kelas ' . $kelas . '. <a href="index.php?page=siswa">Tambah data siswa</a>.';
 }
 
 function kelas_of_fase(string $fase): array

@@ -1,10 +1,8 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-if ($kaKunci !== null) {
-    $c['kelas'] = $kaKunci;
-}
-$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$c['kelas']]);
+$kelasSiswa = $kaKunci ?? (int) $c['kelas'];
+$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$kelasSiswa]);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!can_edit()) {
@@ -49,11 +47,11 @@ foreach (all('SELECT * FROM kehadiran WHERE ta=? AND semester=?', [$c['ta'], $c[
 }
 
 page_head('Kehadiran Siswa', 'Rekap ketidakhadiran semester berjalan: Sakit, Izin, dan Tanpa Keterangan.');
-echo context_bar($kaKunci);
+echo context_bar();
 echo angkatan_lock_alert();
 ?>
 <?php if (!$siswas): ?>
-  <div class="card empty">Belum ada siswa pada kelas <?= $c['kelas'] ?>. <a href="index.php?page=siswa">Tambah data siswa</a>.</div>
+  <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $c['kelas']) ?></div>
 <?php else: ?>
 <form method="post" action="index.php?page=kehadiran">
   <?= csrf_field() ?>

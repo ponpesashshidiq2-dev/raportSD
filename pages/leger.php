@@ -1,10 +1,8 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-if ($kaKunci !== null) {
-    $c['kelas'] = $kaKunci;
-}
-$siswas = all("SELECT id, nama, nis FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$c['kelas']]);
+$kelasSiswa = $kaKunci ?? (int) $c['kelas'];
+$siswas = all("SELECT id, nama, nis FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$kelasSiswa]);
 $mapelList = mapel_kelas($c['kelas']);
 
 $nilaiMap = [];
@@ -78,11 +76,11 @@ $fmt = static function ($n, int $d = 1): string {
 };
 
 page_head('Leger Nilai', 'Rekap nilai akhir seluruh mata pelajaran per siswa beserta rata-rata dan ranking pada konteks aktif.');
-echo context_bar($kaKunci);
+echo context_bar();
 echo angkatan_lock_alert();
 ?>
 <?php if (!$siswas): ?>
-  <div class="card empty">Belum ada siswa pada kelas <?= (int) $c['kelas'] ?>. <a href="index.php?page=siswa">Tambah data siswa</a>.</div>
+  <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $c['kelas']) ?></div>
 <?php elseif (!$mapelList): ?>
   <div class="card empty">Belum ada mata pelajaran untuk kelas <?= (int) $c['kelas'] ?>. Tambahkan pada menu <a href="index.php?page=mapel">Mata Pelajaran</a>.</div>
 <?php else: ?>
