@@ -2,8 +2,8 @@
 $c = ctx();
 $kaKunci = kelas_angkatan();
 $kelasSiswa = $kaKunci ?? (int) $c['kelas'];
-$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$kelasSiswa]);
-$ekstraList = all('SELECT * FROM ekstra ORDER BY urutan, nama');
+$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
+$ekstraList = all('SELECT * FROM ekstra WHERE 1=1' . scope_user() . ' ORDER BY urutan, nama');
 $predikatOps = ['' => '-', 'A' => 'A (Sangat Baik)', 'B' => 'B (Baik)', 'C' => 'C (Cukup)', 'D' => 'D (Kurang)'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

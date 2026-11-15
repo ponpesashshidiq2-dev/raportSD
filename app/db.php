@@ -760,3 +760,46 @@ function migrate_sumatif_kolom(PDO $pdo): void
         throw $e;
     }
 }
+
+function pemilik_data_lama(PDO $pdo): int
+{
+    $st = $pdo->prepare("SELECT id FROM users WHERE LOWER(username)=? OR nama=?");
+    $st->execute(['ak6b', 'Angkatan 6B']);
+    $id = $st->fetchColumn();
+    if ($id) {
+        return (int) $id;
+    }
+    $st = $pdo->prepare("INSERT INTO users (username, password, nama, role, aktif) VALUES (?,?,?,?,1)");
+    $st->execute(['ak6b', password_hash('ak6b123', PASSWORD_DEFAULT), 'Angkatan 6B', 'wali']);
+    return (int) $pdo->lastInsertId();
+}
+
+function migrate_user_scope(PDO $pdo): void
+{
+    $tabel = ['siswa', 'mapel', 'tp', 'ekstra'];
+    $kurang = [];
+    foreach ($tabel as $t) {
+        if (!table_exists($pdo, $t)) {
+            continue;
+        }
+        $kolom = array_map(fn($c) => $c['name'], $pdo->query("PRAGMA table_info($t)")->fetchAll(PDO::FETCH_ASSOC));
+        if (!in_array('user_id', $kolom, true)) {
+            $kurang[] = $t;
+        }
+    }
+    if (!$kurang) {
+        return;
+    }
+    $target = pemilik_data_lama($pdo);
+    $pdo->beginTransaction();
+    try {
+        foreach ($kurang as $t) {
+            $pdo->exec("ALTER TABLE $t ADD COLUMN user_id INTEGER NOT NULL DEFAULT 0");
+            $pdo->exec("UPDATE $t SET user_id=$target");
+        }
+        $pdo->commit();
+    } catch (\Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
+    }
+}

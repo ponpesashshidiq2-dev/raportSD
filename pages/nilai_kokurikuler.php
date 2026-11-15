@@ -2,7 +2,7 @@
 $c = ctx();
 $kaKunci = kelas_angkatan();
 $kelasSiswa = $kaKunci ?? (int) $c['kelas'];
-$siswas = all("SELECT id, nama FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$kelasSiswa]);
+$siswas = all("SELECT id, nama FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
 $dimensi = dimensi_kokurikuler();
 $ops = predikat_kokurikuler_ops();
 

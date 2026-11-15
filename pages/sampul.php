@@ -3,7 +3,7 @@ $c = ctx();
 $p = profil();
 $kelas = $c['kelas'];
 
-$semuaSiswa = all("SELECT * FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$kelas]);
+$semuaSiswa = all("SELECT * FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelas]);
 $terpilih = [];
 if (isset($_GET['s'])) {
     $ids = array_map('intval', (array) $_GET['s']);

@@ -2,7 +2,7 @@
 $c = ctx();
 $kaKunci = kelas_angkatan();
 $kelasSiswa = $kaKunci ?? (int) $c['kelas'];
-$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$kelasSiswa]);
+$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!can_edit()) {

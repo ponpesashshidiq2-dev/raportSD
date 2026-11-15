@@ -2,14 +2,19 @@
 $c = ctx();
 $kaKunci = kelas_angkatan();
 $kelasSiswa = $kaKunci ?? (int) $c['kelas'];
-$uid = (int) (user()['id'] ?? 0);
 $mapelList = mapel_kelas($c['kelas']);
 $mapelId = (int) ($_GET['mapel'] ?? 0);
-if ($mapelId <= 0 && $mapelList) {
+$mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?' . scope_user(), [$mapelId]) : null;
+if (!$mapel && $mapelList) {
     $mapelId = (int) $mapelList[0]['id'];
+    $mapel = one('SELECT * FROM mapel WHERE id=?' . scope_user(), [$mapelId]);
+} elseif (!$mapel) {
+    $mapelId = 0;
 }
-$mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;
-$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$kelasSiswa]);
+$uidDomain = $mapel ? (int) $mapel['user_id'] : -1;
+$siswas = $uidDomain >= 0
+    ? all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? AND user_id=? ORDER BY nama", [$kelasSiswa, $uidDomain])
+    : [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!can_edit()) {
@@ -18,6 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $aksi = $_POST['aksi'] ?? '';
     $mapelId = (int) ($_POST['mapel_id'] ?? $mapelId);
+    $mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?' . scope_user(), [$mapelId]) : null;
+    if (!$mapel) {
+        flash_set('error', 'Mata pelajaran tidak valid atau bukan milik Anda.');
+        redirect('nilai_sumatif');
+    }
+    $uidDomain = (int) $mapel['user_id'];
+    $siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? AND user_id=? ORDER BY nama", [$kelasSiswa, $uidDomain]);
 
     if ($aksi === 'jumlah_terapkan') {
         $jumlah = (int) ($_POST['jumlah'] ?? -1);
@@ -28,12 +40,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             db()->beginTransaction();
             try {
-                sumatif_aes_pastikan($mapelId, (int) $c['kelas'], $c['ta'], $c['semester'], $uid);
+                sumatif_aes_pastikan($mapelId, (int) $c['kelas'], $c['ta'], $c['semester'], $uidDomain);
                 $ada = all(
                     "SELECT id, urutan, nama FROM sumatif_jenis
                      WHERE mapel_id=? AND kelas=? AND ta=? AND semester=? AND user_id=? AND tipe='lingkup'
                      ORDER BY urutan, id",
-                    [$mapelId, $c['kelas'], $c['ta'], $c['semester'], $uid]
+                    [$mapelId, $c['kelas'], $c['ta'], $c['semester'], $uidDomain]
                 );
                 $n = count($ada);
                 if ($n > $jumlah) {
@@ -49,14 +61,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $x = 1;
                         while (one(
                             'SELECT id FROM sumatif_jenis WHERE mapel_id=? AND kelas=? AND ta=? AND semester=? AND user_id=? AND nama=?',
-                            [$mapelId, $c['kelas'], $c['ta'], $c['semester'], $uid, 'Lingkup Materi ' . $urut . $suffix]
+                            [$mapelId, $c['kelas'], $c['ta'], $c['semester'], $uidDomain, 'Lingkup Materi ' . $urut . $suffix]
                         )) {
                             $x++;
                             $suffix = ' (' . $x . ')';
                         }
                         insert_row('sumatif_jenis', [
                             'mapel_id' => $mapelId, 'ta' => $c['ta'], 'semester' => $c['semester'],
-                            'kelas' => (int) $c['kelas'], 'user_id' => $uid, 'tipe' => 'lingkup',
+                            'kelas' => (int) $c['kelas'], 'user_id' => $uidDomain, 'tipe' => 'lingkup',
                             'urutan' => $urut, 'nama' => 'Lingkup Materi ' . $urut . $suffix, 'tanggal' => '',
                         ]);
                     }
@@ -72,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($aksi === 'simpan') {
-        $jenis = sumatif_kolom_list($mapelId, (int) $c['kelas'], $c['ta'], $c['semester'], $uid);
+        $jenis = sumatif_kolom_list($mapelId, (int) $c['kelas'], $c['ta'], $c['semester'], $uidDomain);
         $nilai = $_POST['nilai'] ?? [];
         $tersimpan = 0;
         db()->beginTransaction();
@@ -119,9 +131,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if ($mapelId > 0 && can_edit()) {
-    sumatif_aes_pastikan($mapelId, (int) $c['kelas'], $c['ta'], $c['semester'], $uid);
+    sumatif_aes_pastikan($mapelId, (int) $c['kelas'], $c['ta'], $c['semester'], $uidDomain);
 }
-$jenisList = $mapelId > 0 ? sumatif_kolom_list($mapelId, (int) $c['kelas'], $c['ta'], $c['semester'], $uid) : [];
+$jenisList = $mapelId > 0 ? sumatif_kolom_list($mapelId, (int) $c['kelas'], $c['ta'], $c['semester'], $uidDomain) : [];
 $lingkupList = array_values(array_filter($jenisList, fn($j) => $j['tipe'] === 'lingkup'));
 $aesList = array_values(array_filter($jenisList, fn($j) => $j['tipe'] === 'aes'));
 

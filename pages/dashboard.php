@@ -3,16 +3,16 @@ $c = ctx();
 $p = profil();
 $kelas = $c['kelas'];
 
-$totalSiswa = (int) scalar("SELECT COUNT(*) FROM siswa WHERE status='aktif'");
-$siswaKelas = (int) scalar("SELECT COUNT(*) FROM siswa WHERE status='aktif' AND kelas=?", [$kelas]);
+$totalSiswa = (int) scalar("SELECT COUNT(*) FROM siswa WHERE status='aktif'" . scope_user());
+$siswaKelas = (int) scalar("SELECT COUNT(*) FROM siswa WHERE status='aktif' AND kelas=?" . scope_user(), [$kelas]);
 $mapelRaport = mapel_raport($kelas);
-$tpCount = (int) scalar('SELECT COUNT(*) FROM tp WHERE kelas=? AND semester=?', [$c['kelas'], $c['semester']]);
-$ekstraCount = (int) scalar('SELECT COUNT(*) FROM ekstra');
+$tpCount = (int) scalar('SELECT COUNT(*) FROM tp WHERE kelas=? AND semester=?' . scope_user(), [$c['kelas'], $c['semester']]);
+$ekstraCount = (int) scalar('SELECT COUNT(*) FROM ekstra WHERE 1=1' . scope_user());
 $kokCount = (int) scalar('SELECT COUNT(*) FROM kokurikuler_kegiatan');
 
 $belum = [];
 $totalTugas = count($mapelRaport);
-foreach (all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$kelas]) as $s) {
+foreach (all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelas]) as $s) {
     $isi = 0;
     foreach ($mapelRaport as $m) {
         if (nilai_akhir((int) $s['id'], (int) $m['id'], $c['ta'], $c['semester']) !== null) {
@@ -119,9 +119,9 @@ echo context_bar();
       </thead>
       <tbody>
       <?php for ($k = 1; $k <= 6; $k++):
-          $sk = (int) scalar("SELECT COUNT(*) FROM siswa WHERE status='aktif' AND kelas=?", [$k]);
-          $nf = (int) scalar('SELECT COUNT(*) FROM nilai_formatif WHERE kelas=?', [$k]);
-          $ns = (int) scalar('SELECT COUNT(*) FROM nilai_sumatif WHERE kelas=?', [$k]);
+          $sk = (int) scalar("SELECT COUNT(*) FROM siswa WHERE status='aktif' AND kelas=?" . scope_user(), [$k]);
+          $nf = (int) scalar('SELECT COUNT(*) FROM nilai_formatif nf JOIN siswa s ON s.id = nf.siswa_id WHERE nf.kelas=?' . scope_user('s.user_id'), [$k]);
+          $ns = (int) scalar('SELECT COUNT(*) FROM nilai_sumatif ns JOIN sumatif_jenis sj ON sj.id = ns.jenis_id WHERE ns.kelas=?' . scope_user('sj.user_id'), [$k]);
           $wk = walikelas($k, (int) $c['semester']);
           $aktif = $k === $kelas; ?>
         <tr<?= $aktif ? ' style="background:var(--brand-soft)"' : '' ?>>

@@ -236,13 +236,13 @@ function siswa_import_rows(array $rows, string $mode): array
             ];
             $existing = null;
             if ($nisn !== '') {
-                $existing = one('SELECT id FROM siswa WHERE nisn=?', [$nisn]);
+                $existing = one('SELECT id FROM siswa WHERE nisn=?' . scope_user(), [$nisn]);
             }
             if (!$existing && $nis !== '') {
-                $existing = one('SELECT id FROM siswa WHERE nis=?', [$nis]);
+                $existing = one('SELECT id FROM siswa WHERE nis=?' . scope_user(), [$nis]);
             }
             if (!$existing) {
-                $existing = one('SELECT id FROM siswa WHERE LOWER(nama)=? AND kelas=?', [mb_strtolower($nama), $kelas]);
+                $existing = one('SELECT id FROM siswa WHERE LOWER(nama)=? AND kelas=?' . scope_user(), [mb_strtolower($nama), $kelas]);
             }
             if ($existing) {
                 if ($mode === 'skip') {
@@ -252,7 +252,7 @@ function siswa_import_rows(array $rows, string $mode): array
                 update_row('siswa', $data, 'id=?', [$existing['id']]);
                 $stats['ubah']++;
             } else {
-                insert_row('siswa', $data);
+                insert_row('siswa', $data + ['user_id' => (int) (user()['id'] ?? 0)]);
                 $stats['baru']++;
             }
         }
@@ -339,10 +339,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data['rombel'] = 'Kelas ' . $data['kelas'];
         }
         if ($id > 0) {
+            if (!one('SELECT id FROM siswa WHERE id=?' . scope_user(), [$id])) {
+                flash_set('error', 'Data siswa tidak ditemukan atau bukan milik Anda.');
+                redirect('siswa');
+            }
             update_row('siswa', $data, 'id=?', [$id]);
             flash_set('success', 'Data siswa diperbarui.');
         } else {
-            insert_row('siswa', $data);
+            insert_row('siswa', $data + ['user_id' => (int) (user()['id'] ?? 0)]);
             $id = (int) db()->lastInsertId();
             flash_set('success', 'Siswa baru ditambahkan.');
         }
@@ -360,6 +364,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($aksi === 'hapus') {
         $id = (int) ($_POST['id'] ?? 0);
+        if (!one('SELECT id FROM siswa WHERE id=?' . scope_user(), [$id])) {
+            flash_set('error', 'Data siswa tidak ditemukan atau bukan milik Anda.');
+            redirect('siswa');
+        }
         run('DELETE FROM nilai_formatif WHERE siswa_id=?', [$id]);
         run('DELETE FROM nilai_sumatif WHERE siswa_id=?', [$id]);
         run('DELETE FROM nilai_ekstra WHERE siswa_id=?', [$id]);
@@ -420,7 +428,7 @@ if (isset($_GET['act']) && $_GET['act'] === 'export' && user()) {
     $h0 = ['No', 'Nama Siswa', 'NISN/NIS', '', 'Tempat, Tanggal Lahir', 'Jenis Kelamin', 'Kode Agama', 'Agama', 'Pendidikan Sebelumnya', 'Alamat Peserta Didik', 'Nama Orang Tua', '', 'Pekerjaan Orang Tua', '', 'Alamat Orang Tua', '', '', '', '', 'Wali Peserta Didik', '', ''];
     $h1 = ['', '', 'NISN', 'NIS', '', '', '', '', '', '', 'Ayah', 'Ibu', 'Ayah', 'Ibu', 'Jalan / Kampung / RT / RW', 'Kelurahan', 'Kecamatan', 'Kota/Kabupaten', 'Provinsi', 'Nama', 'Pekerjaan', 'Alamat'];
     $out = [$h0, $h1];
-    $sqlExp = 'SELECT * FROM siswa WHERE 1=1';
+    $sqlExp = 'SELECT * FROM siswa WHERE 1=1' . scope_user();
     $argsExp = [];
     if ($myAng > 0) {
         if ($cohortKelas >= 1 && $cohortKelas <= 6) {
@@ -448,7 +456,7 @@ if (isset($_GET['act']) && $_GET['act'] === 'export' && user()) {
 
 $q = trim($_GET['q'] ?? '');
 $filterKelas = (int) ($_GET['fk'] ?? 0);
-$sql = 'SELECT * FROM siswa WHERE 1=1';
+$sql = 'SELECT * FROM siswa WHERE 1=1' . scope_user();
 $args = [];
 if ($q !== '') {
     $sql .= ' AND (nama LIKE ? OR nisn LIKE ? OR nis LIKE ?)';
@@ -470,7 +478,7 @@ $sql .= ' ORDER BY kelas, nama';
 $siswas = all($sql, $args);
 $edit = null;
 if (!empty($_GET['edit'])) {
-    $edit = one('SELECT * FROM siswa WHERE id=?', [(int) $_GET['edit']]);
+    $edit = one('SELECT * FROM siswa WHERE id=?' . scope_user(), [(int) $_GET['edit']]);
 }
 $catatanWali = '';
 if ($edit) {
@@ -478,7 +486,7 @@ if ($edit) {
         [(int) $edit['id'], $c['ta'], $c['semester'], $c['kelas']]);
     $catatanWali = $cn['teks'] ?? '';
 }
-$totalSemua = (int) scalar('SELECT COUNT(*) FROM siswa');
+$totalSemua = (int) scalar('SELECT COUNT(*) FROM siswa WHERE 1=1' . scope_user());
 
 page_head('Data Siswa', 'Kelola data peserta didik — daftar terkunci sesuai angkatan Anda.',
     '<a class="btn secondary" href="index.php?page=siswa&act=template">Unduh Template</a>'

@@ -64,8 +64,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             db()->commit();
             backfill_kelas_siswa(db());
             backfill_dimensi_ket(db());
+            $legacyNote = '';
+            $rootT = ['siswa', 'mapel', 'tp', 'ekstra', 'sumatif_jenis'];
+            $perluAlih = false;
+            foreach ($rootT as $t) {
+                if ((int) scalar("SELECT COUNT(*) FROM $t WHERE user_id = 0 OR user_id IS NULL") > 0) {
+                    $perluAlih = true;
+                    break;
+                }
+            }
+            if ($perluAlih) {
+                $target = pemilik_data_lama(db());
+                foreach ($rootT as $t) {
+                    run("UPDATE $t SET user_id = ? WHERE user_id = 0 OR user_id IS NULL", [$target]);
+                }
+                $legacyNote = ' Data backup lama dialihkan ke akun "Angkatan 6B".';
+            }
             db()->exec('PRAGMA foreign_keys = ON');
-            flash_set('success', "Restore berhasil: $inserted baris dari " . count($data['tables']) . " tabel.");
+            flash_set('success', "Restore berhasil: $inserted baris dari " . count($data['tables']) . " tabel." . $legacyNote);
         } catch (Throwable $ex) {
             if (db()->inTransaction()) {
                 db()->rollBack();

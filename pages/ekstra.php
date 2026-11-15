@@ -1,7 +1,7 @@
 <?php
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!is_admin()) {
-        flash_set('error', 'Hanya administrator yang dapat mengubah kegiatan ekstrakurikuler.');
+    if (!can_edit()) {
+        flash_set('error', 'Anda tidak memiliki akses untuk mengubah kegiatan ekstrakurikuler.');
         redirect('ekstra');
     }
     $aksi = $_POST['aksi'] ?? '';
@@ -16,17 +16,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirect('ekstra');
         }
         if ($id > 0) {
+            if (!one('SELECT id FROM ekstra WHERE id=?' . scope_user(), [$id])) {
+                flash_set('error', 'Kegiatan tidak ditemukan atau bukan milik Anda.');
+                redirect('ekstra');
+            }
             update_row('ekstra', $data, 'id=?', [$id]);
             flash_set('success', 'Kegiatan diperbarui.');
         } else {
-            $data['urutan'] = $data['urutan'] ?: ((int) scalar('SELECT COALESCE(MAX(urutan),0) FROM ekstra') + 1);
-            insert_row('ekstra', $data);
+            $data['urutan'] = $data['urutan'] ?: ((int) scalar('SELECT COALESCE(MAX(urutan),0) FROM ekstra WHERE 1=1' . scope_user()) + 1);
+            insert_row('ekstra', $data + ['user_id' => (int) (user()['id'] ?? 0)]);
             flash_set('success', 'Kegiatan ditambahkan.');
         }
         redirect('ekstra');
     }
     if ($aksi === 'hapus') {
         $id = (int) ($_POST['id'] ?? 0);
+        if (!one('SELECT id FROM ekstra WHERE id=?' . scope_user(), [$id])) {
+            flash_set('error', 'Kegiatan tidak ditemukan atau bukan milik Anda.');
+            redirect('ekstra');
+        }
         run('DELETE FROM nilai_ekstra WHERE ekstra_id=?', [$id]);
         run('DELETE FROM ekstra_deskripsi WHERE ekstra_id=?', [$id]);
         run('DELETE FROM ekstra WHERE id=?', [$id]);
@@ -37,16 +45,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $edit = null;
 if (!empty($_GET['edit'])) {
-    $edit = one('SELECT * FROM ekstra WHERE id=?', [(int) $_GET['edit']]);
+    $edit = one('SELECT * FROM ekstra WHERE id=?' . scope_user(), [(int) $_GET['edit']]);
 }
-$daftar = all('SELECT e.*, (SELECT COUNT(*) FROM nilai_ekstra n WHERE n.ekstra_id=e.id AND n.kelas=?) AS jml FROM ekstra e ORDER BY e.urutan, e.nama',
+$daftar = all('SELECT e.*, (SELECT COUNT(*) FROM nilai_ekstra n WHERE n.ekstra_id=e.id AND n.kelas=?) AS jml FROM ekstra e WHERE 1=1' . scope_user() . ' ORDER BY e.urutan, e.nama',
     [(int) ctx()['kelas']]);
 
 page_head('Ekstrakurikuler', 'Daftar kegiatan ekstrakurikuler. Nilai yang tidak diinput tidak akan tampil pada raport.',
     '<a class="btn blue" href="index.php?page=nilai_ekstra">Input Nilai Ekstrakurikuler</a>');
 echo context_bar();
 ?>
-<?php if (is_admin()): ?>
+<?php if (can_edit()): ?>
 <form class="card" method="post" action="index.php?page=ekstra">
   <?= csrf_field() ?>
   <input type="hidden" name="aksi" value="simpan">
@@ -62,12 +70,12 @@ echo context_bar();
   </div>
 </form>
 <?php elseif ($edit): ?>
-  <div class="alert alert-info">Hanya administrator yang dapat mengubah data.</div>
+  <div class="alert alert-info">Anda tidak memiliki akses untuk mengubah data ini.</div>
 <?php endif; ?>
 
 <div class="table-wrap">
   <table class="tbl">
-    <thead><tr><th class="center" style="width:40px">No</th><th>Kegiatan</th><th class="center">Siswa Dinilai</th><?php if (is_admin()): ?><th class="center">Aksi</th><?php endif; ?></tr></thead>
+    <thead><tr><th class="center" style="width:40px">No</th><th>Kegiatan</th><th class="center">Siswa Dinilai</th><?php if (can_edit()): ?><th class="center">Aksi</th><?php endif; ?></tr></thead>
     <tbody>
     <?php if (!$daftar): ?>
       <tr><td colspan="4" class="empty">Belum ada kegiatan.</td></tr>
@@ -76,7 +84,7 @@ echo context_bar();
         <td class="center"><?= $no ?></td>
         <td class="name-cell"><?= e($d['nama']) ?></td>
         <td class="center"><span class="badge badge-blue"><?= (int) $d['jml'] ?> siswa</span></td>
-        <?php if (is_admin()): ?>
+        <?php if (can_edit()): ?>
         <td class="center">
           <a class="btn sm secondary" href="index.php?page=ekstra&edit=<?= (int) $d['id'] ?>">Ubah</a>
           <form method="post" action="index.php?page=ekstra" data-confirm="Hapus kegiatan beserta nilainya?">

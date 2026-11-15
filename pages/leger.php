@@ -2,7 +2,7 @@
 $c = ctx();
 $kaKunci = kelas_angkatan();
 $kelasSiswa = $kaKunci ?? (int) $c['kelas'];
-$siswas = all("SELECT id, nama, nis FROM siswa WHERE status='aktif' AND kelas=? ORDER BY nama", [$kelasSiswa]);
+$siswas = all("SELECT id, nama, nis FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
 $mapelList = mapel_kelas($c['kelas']);
 
 $nilaiMap = [];
