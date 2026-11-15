@@ -112,6 +112,7 @@ function render_layout(string $content, string $title, string $page): string
       </div>
     </div>
     <script src="assets/app.js"></script>
+    <script src="assets/grid.js"></script>
     </body>
     </html>
     <?php
@@ -165,4 +166,12 @@ function page_head(string $title, string $subtitle = '', string $right = ''): vo
         echo '<p>' . e($subtitle) . '</p>';
     }
     echo '</div>' . ($right ? '<div class="page-actions">' . $right . '</div>' : '') . '</div>';
+}
+
+function mode_switch(): string
+{
+    return '<div class="seg" id="modeSwitch" role="group" aria-label="Mode tampilan input nilai">'
+        . '<button type="button" class="seg-btn" data-mode="tabel">Tabel</button>'
+        . '<button type="button" class="seg-btn" data-mode="grid">Spreadsheet</button>'
+        . '</div>';
 }

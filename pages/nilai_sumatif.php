@@ -65,7 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         }
                         continue;
                     }
-                    $v = (float) str_replace(',', '.', $raw);
+                    $num = str_replace(',', '.', $raw);
+                    if (!is_numeric($num)) {
+                        continue;
+                    }
+                    $v = (float) $num;
                     if ($v < 0) $v = 0;
                     if ($v > 100) $v = 100;
                     $row = ['nilai' => $v, 'kelas' => $c['kelas']];
@@ -93,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $jenisList = $mapelId > 0 ? all('SELECT * FROM sumatif_jenis WHERE mapel_id=? AND ta=? AND semester=? ORDER BY id',
     [$mapelId, $c['ta'], $c['semester']]) : [];
 
-page_head('Input Nilai Sumatif', 'Buat penilaian sumatif (mis. harian, tengah semester, akhir semester) lalu isi nilainya.');
+page_head('Input Nilai Sumatif', 'Buat penilaian sumatif (mis. harian, tengah semester, akhir semester) lalu isi nilainya.', mode_switch());
 echo context_bar();
 echo angkatan_lock_alert();
 ?>
@@ -138,29 +142,34 @@ echo angkatan_lock_alert();
       $existing[$r['jenis_id'] . '_' . $r['siswa_id']] = $r['nilai'];
   }
   ?>
+  <?php if (can_edit()): ?>
+  <div class="no-print" hidden>
+    <?php foreach ($jenisList as $j): ?>
+    <form id="deljenis<?= (int) $j['id'] ?>" method="post" action="index.php?page=nilai_sumatif" data-confirm="Hapus penilaian beserta seluruh nilainya?">
+      <?= csrf_field() ?>
+      <input type="hidden" name="aksi" value="jenis_hapus">
+      <input type="hidden" name="mapel_id" value="<?= $mapelId ?>">
+      <input type="hidden" name="jenis_id" value="<?= (int) $j['id'] ?>">
+    </form>
+    <?php endforeach; ?>
+  </div>
+  <?php endif; ?>
   <form method="post" action="index.php?page=nilai_sumatif">
     <?= csrf_field() ?>
     <input type="hidden" name="aksi" value="simpan">
     <input type="hidden" name="mapel_id" value="<?= $mapelId ?>">
     <div class="table-wrap">
-      <table class="tbl">
+      <table class="tbl" data-grid>
         <caption><?= e($mapel['nama']) ?> - Kelas <?= $c['kelas'] ?> - Semester <?= $c['semester'] ?> - <?= e($c['ta']) ?></caption>
         <thead>
           <tr>
-            <th class="center" style="width:40px">No</th>
-            <th>Nama Siswa</th>
-            <?php foreach ($jenisList as $j): ?>
-              <th class="center">
+            <th class="center" style="width:40px" data-frozen="no">No</th>
+            <th data-frozen="nama">Nama Siswa</th>
+            <?php $hci = -1; foreach ($jenisList as $j): $hci++; ?>
+              <th class="center" data-col="<?= $hci ?>">
                 <?= e($j['nama']) ?><div class="hint" style="font-weight:400;text-transform:none;letter-spacing:0"><?= e($j['tanggal']) ?></div>
-                <?php if (can_edit()):
-                  $fid = 'deljenis' . (int) $j['id']; ?>
-                <form id="<?= $fid ?>" method="post" action="index.php?page=nilai_sumatif" data-confirm="Hapus penilaian beserta seluruh nilainya?">
-                  <?= csrf_field() ?>
-                  <input type="hidden" name="aksi" value="jenis_hapus">
-                  <input type="hidden" name="mapel_id" value="<?= $mapelId ?>">
-                  <input type="hidden" name="jenis_id" value="<?= (int) $j['id'] ?>">
-                </form>
-                <button class="btn sm danger" type="submit" form="<?= $fid ?>">Hapus</button>
+                <?php if (can_edit()): ?>
+                <button class="btn sm danger" type="submit" form="deljenis<?= (int) $j['id'] ?>">Hapus</button>
                 <?php endif; ?>
               </th>
             <?php endforeach; ?>
@@ -172,17 +181,17 @@ echo angkatan_lock_alert();
         <?php $no = 0; foreach ($siswas as $s): $no++;
             $sum = 0; $cnt = 0; ?>
           <tr>
-            <td class="center"><?= $no ?></td>
-            <td class="name-cell"><?= e($s['nama']) ?><div class="hint">NISN <?= e($s['nisn']) ?></div></td>
-            <?php foreach ($jenisList as $j):
+            <td class="center" data-frozen="no" data-row-head="<?= $no - 1 ?>"><?= $no ?></td>
+            <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint">NISN <?= e($s['nisn']) ?></div></td>
+            <?php $ci = -1; foreach ($jenisList as $j): $ci++;
                 $k = $j['id'] . '_' . $s['id'];
                 $v = $existing[$k] ?? null;
                 if ($v !== null) { $sum += (float) $v; $cnt++; } ?>
-              <td class="center">
-                <input type="number" name="nilai[<?= $k ?>]" min="0" max="100" step="0.5" value="<?= $v !== null ? e(format_nilai((float) $v)) : '' ?>" placeholder="-">
+              <td class="center cell" data-r="<?= $no - 1 ?>" data-c="<?= $ci ?>">
+                <input type="text" inputmode="decimal" autocomplete="off" name="nilai[<?= $k ?>]" value="<?= $v !== null ? e(format_nilai((float) $v)) : '' ?>" placeholder="-">
               </td>
             <?php endforeach; ?>
-            <td class="center"><b><?= $cnt ? format_nilai($sum / $cnt) : '-' ?></b></td>
+            <td class="center" data-avg><b><?= $cnt ? format_nilai($sum / $cnt) : '-' ?></b></td>
             <?php $na = nilai_akhir((int) $s['id'], $mapelId, $c['ta'], $c['semester']); ?>
             <td class="center"><b class="<?= $na !== null && $na < (kkm_mapel($mapelId) ?? 0) ? 'nilai-red' : '' ?>"><?= $na !== null ? format_nilai($na) : '-' ?></b></td>
           </tr>
@@ -192,7 +201,8 @@ echo angkatan_lock_alert();
     </div>
     <div class="toolbar mt">
       <?php if (can_edit()): ?><button class="btn" type="submit">Simpan Nilai Sumatif</button><?php endif; ?>
-      <span class="hint">Nilai Akhir = formatif &times; <?= (int) profil()['bobot_formatif'] ?>% + sumatif &times; <?= (int) profil()['bobot_sumatif'] ?>%.</span>
+      <span class="grid-status" id="saveStatus" hidden>Belum tersimpan</span>
+      <span class="hint">Nilai Akhir = formatif &times; <?= (int) profil()['bobot_formatif'] ?>% + sumatif &times; <?= (int) profil()['bobot_sumatif'] ?>% (terupdate setelah simpan). Mode Spreadsheet: panah/Tab pindah sel, klik header untuk pilih kolom/baris, salin-tempel dari Excel didukung.</span>
     </div>
   </form>
 <?php endif; ?>

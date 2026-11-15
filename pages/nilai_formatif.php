@@ -59,7 +59,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 continue;
             }
-            $v = (float) str_replace(',', '.', $raw);
+            $num = str_replace(',', '.', $raw);
+            if (!is_numeric($num)) {
+                continue;
+            }
+            $v = (float) $num;
             if ($v < 0) $v = 0;
             if ($v > 100) $v = 100;
             $row = ['nilai' => $v, 'kelas' => $c['kelas']];
@@ -105,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect('nilai_formatif', $qs);
 }
 
-page_head('Input Nilai Formatif', 'Nilai setiap Tujuan Pembelajaran (TP) per siswa pada konteks aktif.');
+page_head('Input Nilai Formatif', 'Nilai setiap Tujuan Pembelajaran (TP) per siswa pada konteks aktif.', mode_switch());
 echo context_bar();
 echo angkatan_lock_alert();
 ?>
@@ -179,17 +183,17 @@ echo angkatan_lock_alert();
     <input type="hidden" name="tp_filter" value="<?= $tpSel ?>">
     <input type="hidden" name="jilid_filter" value="<?= $jilidSel ?>">
     <div class="table-wrap">
-      <table class="tbl">
+      <table class="tbl" data-grid>
         <caption><?= e($mapel['nama']) ?><?= $isTahsin ? ' - Jilid ' . $jilidSel : '' ?> - Kelas <?= $c['kelas'] ?> - Semester <?= $c['semester'] ?> - <?= e($c['ta']) ?></caption>
         <thead>
           <tr>
-            <th class="center" style="width:40px">No</th>
-            <th>Nama Siswa</th>
+            <th class="center" style="width:40px" data-frozen="no">No</th>
+            <th data-frozen="nama">Nama Siswa</th>
             <?php if ($isTahsin): ?>
               <th class="center" style="width:90px">Jilid</th>
             <?php endif; ?>
-            <?php foreach ($tps as $t): ?>
-              <th class="center" title="<?= e($t['deskripsi']) ?>"><?= e($t['kode']) ?><div class="hint" style="font-weight:400;text-transform:none;letter-spacing:0"><?= e(mb_strimwidth($t['deskripsi'], 0, 42, '…')) ?></div></th>
+            <?php $hci = -1; foreach ($tps as $t): $hci++; ?>
+              <th class="center" data-col="<?= $hci ?>" title="<?= e($t['deskripsi']) ?>"><?= e($t['kode']) ?><div class="hint" style="font-weight:400;text-transform:none;letter-spacing:0"><?= e(mb_strimwidth($t['deskripsi'], 0, 42, '…')) ?></div></th>
             <?php endforeach; ?>
             <th class="center">Rata Formatif<?= $tpSel ? ' (TP ini)' : '' ?></th>
           </tr>
@@ -198,8 +202,8 @@ echo angkatan_lock_alert();
         <?php $no = 0; foreach ($siswas as $s): $no++;
             $sum = 0; $cnt = 0; ?>
           <tr>
-            <td class="center"><?= $no ?></td>
-            <td class="name-cell"><?= e($s['nama']) ?><div class="hint">NISN <?= e($s['nisn']) ?></div></td>
+            <td class="center" data-frozen="no" data-row-head="<?= $no - 1 ?>"><?= $no ?></td>
+            <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint">NISN <?= e($s['nisn']) ?></div></td>
             <?php if ($isTahsin): $jNow = $jilidMap[(int) $s['id']] ?? 1; ?>
               <td class="center">
                 <select name="jilid[<?= (int) $s['id'] ?>]">
@@ -209,15 +213,15 @@ echo angkatan_lock_alert();
                 </select>
               </td>
             <?php endif; ?>
-            <?php foreach ($tps as $t):
+            <?php $ci = -1; foreach ($tps as $t): $ci++;
                 $k = $t['id'] . '_' . $s['id'];
                 $v = $existing[$k] ?? null;
                 if ($v !== null) { $sum += (float) $v; $cnt++; } ?>
-              <td class="center">
-                <input type="number" name="nilai[<?= $k ?>]" min="0" max="100" step="0.5" value="<?= $v !== null ? e(format_nilai((float) $v)) : '' ?>" placeholder="-">
+              <td class="center cell" data-r="<?= $no - 1 ?>" data-c="<?= $ci ?>">
+                <input type="text" inputmode="decimal" autocomplete="off" name="nilai[<?= $k ?>]" value="<?= $v !== null ? e(format_nilai((float) $v)) : '' ?>" placeholder="-">
               </td>
             <?php endforeach; ?>
-            <td class="center"><b><?= $cnt ? format_nilai($sum / $cnt) : '-' ?></b></td>
+            <td class="center" data-avg><b><?= $cnt ? format_nilai($sum / $cnt) : '-' ?></b></td>
           </tr>
         <?php endforeach; ?>
         </tbody>
@@ -225,9 +229,11 @@ echo angkatan_lock_alert();
     </div>
     <div class="toolbar mt">
       <button class="btn" type="submit">Simpan Nilai Formatif</button>
+      <span class="grid-status" id="saveStatus" hidden>Belum tersimpan</span>
       <span class="hint"><?= $isTahsin
           ? 'Kosongkan sel untuk menghapus nilai. Kolom Jilid menyimpan jilid tiap siswa (1-9) — TP yang dinilai mengikuti Jilid terpilih di atas.'
-          : 'Kosongkan sel untuk menghapus nilai. Rentang 0-100. Penyimpanan hanya memengaruhi TP yang ditampilkan.' ?></span>
+          : 'Kosongkan sel untuk menghapus nilai. Rentang 0-100. Penyimpanan hanya memengaruhi TP yang ditampilkan.' ?>
+        Mode Spreadsheet: panah/Tab pindah sel, klik header untuk pilih kolom/baris, salin-tempel dari Excel didukung, Enter = simpan &amp; lanjut, Esc = batalkan.</span>
     </div>
   </form>
 <?php endif; ?>
