@@ -2,6 +2,7 @@
 $c = ctx();
 $kaKunci = kelas_angkatan();
 $kelasSiswa = $kaKunci ?? (int) $c['kelas'];
+$uid = (int) (user()['id'] ?? 0);
 $mapelList = mapel_kelas($c['kelas']);
 $mapelId = (int) ($_GET['mapel'] ?? 0);
 if ($mapelId <= 0 && $mapelList) {
@@ -18,37 +19,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $aksi = $_POST['aksi'] ?? '';
     $mapelId = (int) ($_POST['mapel_id'] ?? $mapelId);
 
-    if ($aksi === 'jenis_tambah') {
-        $nama = trim($_POST['nama'] ?? '');
-        if ($nama === '' || $mapelId <= 0) {
-            flash_set('error', 'Nama penilaian wajib diisi.');
+    if ($aksi === 'jumlah_terapkan') {
+        $jumlah = (int) ($_POST['jumlah'] ?? -1);
+        if ($mapelId <= 0) {
+            flash_set('error', 'Pilih mata pelajaran terlebih dahulu.');
+        } elseif ($jumlah < 0 || $jumlah > 50) {
+            flash_set('error', 'Jumlah kolom harus antara 0 dan 50.');
         } else {
-            $ada = one('SELECT id FROM sumatif_jenis WHERE mapel_id=? AND ta=? AND semester=? AND LOWER(nama)=?',
-                [$mapelId, $c['ta'], $c['semester'], mb_strtolower($nama)]);
-            if ($ada) {
-                flash_set('error', 'Nama penilaian sudah ada.');
-            } else {
-                insert_row('sumatif_jenis', [
-                    'mapel_id' => $mapelId, 'ta' => $c['ta'], 'semester' => $c['semester'],
-                    'nama' => $nama, 'tanggal' => trim($_POST['tanggal'] ?? ''),
-                ]);
-                flash_set('success', 'Penilaian sumatif "' . $nama . '" ditambahkan.');
+            db()->beginTransaction();
+            try {
+                sumatif_aes_pastikan($mapelId, (int) $c['kelas'], $c['ta'], $c['semester'], $uid);
+                $ada = all(
+                    "SELECT id, urutan, nama FROM sumatif_jenis
+                     WHERE mapel_id=? AND kelas=? AND ta=? AND semester=? AND user_id=? AND tipe='lingkup'
+                     ORDER BY urutan, id",
+                    [$mapelId, $c['kelas'], $c['ta'], $c['semester'], $uid]
+                );
+                $n = count($ada);
+                if ($n > $jumlah) {
+                    foreach (array_slice($ada, $jumlah) as $r) {
+                        run('DELETE FROM nilai_sumatif WHERE jenis_id=?', [$r['id']]);
+                        run('DELETE FROM sumatif_jenis WHERE id=?', [$r['id']]);
+                    }
+                } elseif ($n < $jumlah) {
+                    $urut = $ada ? (int) max(array_column($ada, 'urutan')) : 0;
+                    for ($k = $n + 1; $k <= $jumlah; $k++) {
+                        $urut++;
+                        $suffix = '';
+                        $x = 1;
+                        while (one(
+                            'SELECT id FROM sumatif_jenis WHERE mapel_id=? AND kelas=? AND ta=? AND semester=? AND user_id=? AND nama=?',
+                            [$mapelId, $c['kelas'], $c['ta'], $c['semester'], $uid, 'Lingkup Materi ' . $urut . $suffix]
+                        )) {
+                            $x++;
+                            $suffix = ' (' . $x . ')';
+                        }
+                        insert_row('sumatif_jenis', [
+                            'mapel_id' => $mapelId, 'ta' => $c['ta'], 'semester' => $c['semester'],
+                            'kelas' => (int) $c['kelas'], 'user_id' => $uid, 'tipe' => 'lingkup',
+                            'urutan' => $urut, 'nama' => 'Lingkup Materi ' . $urut . $suffix, 'tanggal' => '',
+                        ]);
+                    }
+                }
+                db()->commit();
+                flash_set('success', "Jumlah kolom lingkup materi: $jumlah (Asesmen Akhir Semester Non-Tes & Tes tersedia otomatis).");
+            } catch (Throwable $ex) {
+                db()->rollBack();
+                flash_set('error', 'Gagal menyimpan jumlah kolom: ' . $ex->getMessage());
             }
         }
         redirect('nilai_sumatif', ['mapel' => $mapelId]);
     }
 
-    if ($aksi === 'jenis_hapus') {
-        $jid = (int) ($_POST['jenis_id'] ?? 0);
-        run('DELETE FROM nilai_sumatif WHERE jenis_id=?', [$jid]);
-        run('DELETE FROM sumatif_jenis WHERE id=?', [$jid]);
-        flash_set('success', 'Penilaian sumatif beserta nilainya dihapus.');
-        redirect('nilai_sumatif', ['mapel' => $mapelId]);
-    }
-
     if ($aksi === 'simpan') {
-        $jenis = all('SELECT * FROM sumatif_jenis WHERE mapel_id=? AND ta=? AND semester=? ORDER BY id',
-            [$mapelId, $c['ta'], $c['semester']]);
+        $jenis = sumatif_kolom_list($mapelId, (int) $c['kelas'], $c['ta'], $c['semester'], $uid);
         $nilai = $_POST['nilai'] ?? [];
         $tersimpan = 0;
         db()->beginTransaction();
@@ -94,10 +118,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$jenisList = $mapelId > 0 ? all('SELECT * FROM sumatif_jenis WHERE mapel_id=? AND ta=? AND semester=? ORDER BY id',
-    [$mapelId, $c['ta'], $c['semester']]) : [];
+if ($mapelId > 0 && can_edit()) {
+    sumatif_aes_pastikan($mapelId, (int) $c['kelas'], $c['ta'], $c['semester'], $uid);
+}
+$jenisList = $mapelId > 0 ? sumatif_kolom_list($mapelId, (int) $c['kelas'], $c['ta'], $c['semester'], $uid) : [];
+$lingkupList = array_values(array_filter($jenisList, fn($j) => $j['tipe'] === 'lingkup'));
+$aesList = array_values(array_filter($jenisList, fn($j) => $j['tipe'] === 'aes'));
 
-page_head('Input Nilai Sumatif', 'Buat penilaian sumatif (mis. harian, tengah semester, akhir semester) lalu isi nilainya.', mode_switch());
+page_head('Input Nilai Sumatif', 'Atur jumlah kolom Lingkup Materi lalu isi nilainya; Asesmen Akhir Semester (Non-Tes & Tes) tersedia otomatis.', mode_switch());
 echo context_bar();
 echo angkatan_lock_alert();
 ?>
@@ -109,7 +137,7 @@ echo angkatan_lock_alert();
       <option value="<?= (int) $m['id'] ?>"<?= $mapelId === (int) $m['id'] ? ' selected' : '' ?>><?= e($m['nama']) ?></option>
     <?php endforeach; ?>
   </select>
-  <span class="badge badge-gray"><?= count($jenisList) ?> penilaian</span>
+  <span class="badge badge-gray"><?= count($lingkupList) ?> lingkup + <?= count($aesList) ?> AES</span>
 </form>
 
 <?php if (!$mapel): ?>
@@ -117,22 +145,25 @@ echo angkatan_lock_alert();
 <?php else: ?>
 <?php if (can_edit()): ?>
 <div class="card">
-  <h3>Tambah Penilaian Sumatif</h3>
+  <h3>Jumlah Kolom Lingkup Materi</h3>
   <form method="post" action="index.php?page=nilai_sumatif">
     <?= csrf_field() ?>
-    <input type="hidden" name="aksi" value="jenis_tambah">
+    <input type="hidden" name="aksi" value="jumlah_terapkan">
     <input type="hidden" name="mapel_id" value="<?= $mapelId ?>">
     <div class="form-row">
-      <div class="field"><label>Nama Penilaian</label><input type="text" name="nama" placeholder="mis. Sumatif Akhir Semester" required></div>
-      <div class="field"><label>Tanggal</label><input type="date" name="tanggal"></div>
+      <div class="field">
+        <label>Jumlah Kolom</label>
+        <input type="number" name="jumlah" min="0" max="50" value="<?= count($lingkupList) ?>" required>
+      </div>
     </div>
-    <button class="btn" type="submit">Tambah Kolom</button>
+    <button class="btn" type="submit">Terapkan Jumlah Kolom</button>
+    <span class="hint">Kolom baru berlabel "Lingkup Materi 1..N". Kolom "Asesmen Akhir Semester Non-Tes" dan "Tes" selalu tersedia otomatis. Jumlah tersimpan per pengguna, mapel, kelas, dan semester.</span>
   </form>
 </div>
 <?php endif; ?>
 
 <?php if (!$jenisList): ?>
-  <div class="card empty">Belum ada penilaian sumatif untuk mapel ini pada <?= e($c['ta']) ?> Semester <?= $c['semester'] ?>. Tambahkan kolom penilaian terlebih dahulu.</div>
+  <div class="card empty">Belum ada kolom penilaian untuk mapel ini pada <?= e($c['ta']) ?> Semester <?= $c['semester'] ?>. Atur jumlah kolom lingkup materi terlebih dahulu.</div>
 <?php elseif (!$siswas): ?>
   <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $c['kelas']) ?></div>
 <?php else:
@@ -142,18 +173,6 @@ echo angkatan_lock_alert();
       $existing[$r['jenis_id'] . '_' . $r['siswa_id']] = $r['nilai'];
   }
   ?>
-  <?php if (can_edit()): ?>
-  <div class="no-print" hidden>
-    <?php foreach ($jenisList as $j): ?>
-    <form id="deljenis<?= (int) $j['id'] ?>" method="post" action="index.php?page=nilai_sumatif" data-confirm="Hapus penilaian beserta seluruh nilainya?">
-      <?= csrf_field() ?>
-      <input type="hidden" name="aksi" value="jenis_hapus">
-      <input type="hidden" name="mapel_id" value="<?= $mapelId ?>">
-      <input type="hidden" name="jenis_id" value="<?= (int) $j['id'] ?>">
-    </form>
-    <?php endforeach; ?>
-  </div>
-  <?php endif; ?>
   <form method="post" action="index.php?page=nilai_sumatif">
     <?= csrf_field() ?>
     <input type="hidden" name="aksi" value="simpan">
@@ -166,12 +185,7 @@ echo angkatan_lock_alert();
             <th class="center" style="width:40px" data-frozen="no">No</th>
             <th data-frozen="nama">Nama Siswa</th>
             <?php $hci = -1; foreach ($jenisList as $j): $hci++; ?>
-              <th class="center" data-col="<?= $hci ?>">
-                <?= e($j['nama']) ?><div class="hint" style="font-weight:400;text-transform:none;letter-spacing:0"><?= e($j['tanggal']) ?></div>
-                <?php if (can_edit()): ?>
-                <button class="btn sm danger" type="submit" form="deljenis<?= (int) $j['id'] ?>">Hapus</button>
-                <?php endif; ?>
-              </th>
+              <th class="center" data-col="<?= $hci ?>"><?= e($j['nama']) ?></th>
             <?php endforeach; ?>
             <th class="center">Rata Sumatif</th>
             <th class="center">Nilai Akhir</th>
@@ -179,20 +193,31 @@ echo angkatan_lock_alert();
         </thead>
         <tbody>
         <?php $no = 0; foreach ($siswas as $s): $no++;
-            $sum = 0; $cnt = 0; ?>
+            $sl = 0; $cl = 0; $sa = 0; $ca = 0; ?>
           <tr>
             <td class="center" data-frozen="no" data-row-head="<?= $no - 1 ?>"><?= $no ?></td>
             <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint">NISN <?= e($s['nisn']) ?></div></td>
             <?php $ci = -1; foreach ($jenisList as $j): $ci++;
                 $k = $j['id'] . '_' . $s['id'];
                 $v = $existing[$k] ?? null;
-                if ($v !== null) { $sum += (float) $v; $cnt++; } ?>
-              <td class="center cell" data-r="<?= $no - 1 ?>" data-c="<?= $ci ?>">
+                if ($v !== null) {
+                    if ($j['tipe'] === 'aes') { $sa += (float) $v; $ca++; } else { $sl += (float) $v; $cl++; }
+                } ?>
+              <td class="center cell" data-r="<?= $no - 1 ?>" data-c="<?= $ci ?>" data-group="<?= e($j['tipe']) ?>">
                 <input type="text" inputmode="decimal" autocomplete="off" name="nilai[<?= $k ?>]" value="<?= $v !== null ? e(format_nilai((float) $v)) : '' ?>" placeholder="-">
               </td>
             <?php endforeach; ?>
-            <td class="center" data-avg><b><?= $cnt ? format_nilai($sum / $cnt) : '-' ?></b></td>
-            <?php $na = nilai_akhir((int) $s['id'], $mapelId, $c['ta'], $c['semester']); ?>
+            <?php
+            $rata = null;
+            if ($cl && $ca) {
+                $rata = ($sl / $cl + $sa / $ca) / 2;
+            } elseif ($cl) {
+                $rata = $sl / $cl;
+            } elseif ($ca) {
+                $rata = $sa / $ca;
+            }
+            $na = nilai_akhir((int) $s['id'], $mapelId, $c['ta'], $c['semester']); ?>
+            <td class="center" data-avg><b><?= $rata !== null ? format_nilai($rata) : '-' ?></b></td>
             <td class="center"><b class="<?= $na !== null && $na < (kkm_mapel($mapelId) ?? 0) ? 'nilai-red' : '' ?>"><?= $na !== null ? format_nilai($na) : '-' ?></b></td>
           </tr>
         <?php endforeach; ?>
@@ -202,7 +227,7 @@ echo angkatan_lock_alert();
     <div class="toolbar mt">
       <?php if (can_edit()): ?><button class="btn" type="submit">Simpan Nilai Sumatif</button><?php endif; ?>
       <span class="grid-status" id="saveStatus" hidden>Belum tersimpan</span>
-      <span class="hint">Nilai Akhir = formatif &times; <?= (int) profil()['bobot_formatif'] ?>% + sumatif &times; <?= (int) profil()['bobot_sumatif'] ?>% (terupdate setelah simpan). Mode Spreadsheet: panah/Tab pindah sel, klik header untuk pilih kolom/baris, salin-tempel dari Excel didukung.</span>
+      <span class="hint">Rata Sumatif = rata-rata Lingkup Materi dan rata-rata Asesmen Akhir Semester. Nilai Akhir = formatif &times; <?= (int) profil()['bobot_formatif'] ?>% + sumatif &times; <?= (int) profil()['bobot_sumatif'] ?>% (terupdate setelah simpan). Mode Spreadsheet: panah/Tab pindah sel, klik header untuk pilih kolom/baris, salin-tempel dari Excel didukung.</span>
     </div>
   </form>
 <?php endif; ?>

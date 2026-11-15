@@ -25,6 +25,7 @@ function db(): PDO
         migrate_kokurikuler($pdo);
         migrate_dimensi_ket($pdo);
         migrate_kelas_tabel($pdo);
+        migrate_sumatif_kolom($pdo);
         migrate_tp_kelas($pdo);
         migrate_jilid($pdo);
         migrate_profil_tambahan($pdo);
@@ -340,9 +341,48 @@ function avg_formatif(int $siswa, int $mapel, string $ta, int $sem): ?float
 
 function avg_sumatif(int $siswa, int $mapel, string $ta, int $sem): ?float
 {
-    $v = scalar('SELECT AVG(nilai) FROM nilai_sumatif WHERE siswa_id=? AND mapel_id=? AND ta=? AND semester=?',
-        [$siswa, $mapel, $ta, $sem]);
-    return $v === null ? null : (float) $v;
+    $ambil = fn(string $tipe) => scalar(
+        'SELECT AVG(n.nilai) FROM nilai_sumatif n JOIN sumatif_jenis j ON j.id=n.jenis_id'
+        . ' WHERE n.siswa_id=? AND n.mapel_id=? AND n.ta=? AND n.semester=? AND j.tipe=?',
+        [$siswa, $mapel, $ta, $sem, $tipe]
+    );
+    $l = $ambil('lingkup');
+    $a = $ambil('aes');
+    if ($l === null && $a === null) {
+        return null;
+    }
+    if ($l === null) {
+        return round((float) $a, 1);
+    }
+    if ($a === null) {
+        return round((float) $l, 1);
+    }
+    return round(((float) $l + (float) $a) / 2, 1);
+}
+
+function sumatif_kolom_list(int $mapel, int $kelas, string $ta, int $sem, int $uid): array
+{
+    return all(
+        "SELECT * FROM sumatif_jenis WHERE mapel_id=? AND kelas=? AND ta=? AND semester=? AND user_id=?
+         ORDER BY CASE tipe WHEN 'lingkup' THEN 0 ELSE 1 END, urutan, id",
+        [$mapel, $kelas, $ta, $sem, $uid]
+    );
+}
+
+function sumatif_aes_pastikan(int $mapel, int $kelas, string $ta, int $sem, int $uid): void
+{
+    foreach ([1 => 'Asesmen Akhir Semester Non-Tes', 2 => 'Asesmen Akhir Semester Tes'] as $urutan => $nama) {
+        $ada = one(
+            'SELECT id FROM sumatif_jenis WHERE mapel_id=? AND kelas=? AND ta=? AND semester=? AND user_id=? AND nama=?',
+            [$mapel, $kelas, $ta, $sem, $uid, $nama]
+        );
+        if (!$ada) {
+            insert_row('sumatif_jenis', [
+                'mapel_id' => $mapel, 'ta' => $ta, 'semester' => $sem, 'kelas' => $kelas,
+                'user_id' => $uid, 'tipe' => 'aes', 'urutan' => $urutan, 'nama' => $nama, 'tanggal' => '',
+            ]);
+        }
+    }
 }
 
 function nilai_akhir(int $siswa, int $mapel, string $ta, int $sem): ?float

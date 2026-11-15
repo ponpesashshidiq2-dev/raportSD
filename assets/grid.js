@@ -129,13 +129,21 @@
     if (!tr) return;
     var out = tr.querySelector('[data-avg]');
     if (!out) return;
-    var sum = 0, n = 0;
-    tr.querySelectorAll('td[data-r][data-c] input').forEach(function (i) {
+    var groups = {};
+    tr.querySelectorAll('td[data-r][data-c]').forEach(function (cell) {
+      var i = cell.querySelector('input');
+      if (!i) return;
       var v = parseNum(i.value);
-      if (v !== null) { sum += v; n++; }
+      if (v === null) return;
+      var g = cell.getAttribute('data-group') || '';
+      if (!groups[g]) groups[g] = { sum: 0, n: 0 };
+      groups[g].sum += v;
+      groups[g].n++;
     });
+    var avgs = Object.keys(groups).map(function (k) { return groups[k].sum / groups[k].n; });
+    var val = avgs.length ? avgs.reduce(function (a, b) { return a + b; }, 0) / avgs.length : null;
     var b = out.querySelector('b') || out;
-    b.textContent = n ? fmtNum(Math.round(sum / n * 10) / 10) : '-';
+    b.textContent = val === null ? '-' : fmtNum(Math.round(val * 10) / 10);
   }
 
   function markDirty() {

@@ -118,9 +118,13 @@ CREATE TABLE sumatif_jenis (
   mapel_id INTEGER NOT NULL,
   ta TEXT NOT NULL,
   semester INTEGER NOT NULL,
+  kelas INTEGER NOT NULL DEFAULT 0,
+  user_id INTEGER NOT NULL DEFAULT 0,
+  tipe TEXT NOT NULL DEFAULT 'lingkup',
+  urutan INTEGER NOT NULL DEFAULT 0,
   nama TEXT NOT NULL,
   tanggal TEXT NOT NULL DEFAULT '',
-  UNIQUE (mapel_id, ta, semester, nama)
+  UNIQUE (mapel_id, kelas, ta, semester, user_id, nama)
 );
 CREATE TABLE nilai_sumatif (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -692,5 +696,67 @@ function migrate_jilid(PDO $pdo): void
             SELECT id, mapel_id, fase, 0, deskripsi FROM cp');
         $pdo->exec('DROP TABLE cp');
         $pdo->exec('ALTER TABLE cp_jilid_migrate RENAME TO cp');
+    }
+}
+
+function migrate_sumatif_kolom(PDO $pdo): void
+{
+    if (!table_exists($pdo, 'sumatif_jenis')) {
+        return;
+    }
+    $kolom = array_map(fn($c) => $c['name'], $pdo->query('PRAGMA table_info(sumatif_jenis)')->fetchAll(PDO::FETCH_ASSOC));
+    if (in_array('tipe', $kolom, true)) {
+        return;
+    }
+    $tmp = 'sumatif_jenis_mig';
+    $pdo->beginTransaction();
+    try {
+        $pdo->exec('DROP TABLE IF EXISTS ' . $tmp);
+        $pdo->exec("CREATE TABLE $tmp (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          mapel_id INTEGER NOT NULL,
+          ta TEXT NOT NULL,
+          semester INTEGER NOT NULL,
+          kelas INTEGER NOT NULL DEFAULT 0,
+          user_id INTEGER NOT NULL DEFAULT 0,
+          tipe TEXT NOT NULL DEFAULT 'lingkup',
+          urutan INTEGER NOT NULL DEFAULT 0,
+          nama TEXT NOT NULL,
+          tanggal TEXT NOT NULL DEFAULT '',
+          UNIQUE (mapel_id, kelas, ta, semester, user_id, nama)
+        )");
+        $ins = $pdo->prepare("INSERT INTO $tmp (mapel_id, ta, semester, kelas, user_id, tipe, urutan, nama, tanggal)
+            VALUES (?, ?, ?, ?, 0, 'lingkup', ?, ?, ?)");
+        $upd = $pdo->prepare('UPDATE nilai_sumatif SET jenis_id=? WHERE jenis_id=? AND kelas=?');
+        $urutPer = [];
+        foreach ($pdo->query('SELECT * FROM sumatif_jenis ORDER BY id')->fetchAll(PDO::FETCH_ASSOC) as $j) {
+            $klsSt = $pdo->prepare('SELECT DISTINCT kelas FROM nilai_sumatif WHERE jenis_id=? AND kelas>0');
+            $klsSt->execute([$j['id']]);
+            $daftarKelas = array_map('intval', $klsSt->fetchAll(PDO::FETCH_COLUMN));
+            if (!$daftarKelas) {
+                continue;
+            }
+            $key = $j['mapel_id'] . '|' . $j['ta'] . '|' . $j['semester'];
+            $urutPer[$key] = ($urutPer[$key] ?? 0) + 1;
+            $urut = $urutPer[$key];
+            $pertama = null;
+            foreach ($daftarKelas as $k) {
+                $ins->execute([$j['mapel_id'], $j['ta'], $j['semester'], $k, $urut, $j['nama'], $j['tanggal']]);
+                $baru = (int) $pdo->lastInsertId();
+                if ($pertama === null) {
+                    $pertama = $baru;
+                }
+                $upd->execute([$baru, $j['id'], $k]);
+            }
+            if ($pertama !== null) {
+                $upd->execute([$pertama, $j['id'], 0]);
+            }
+        }
+        $pdo->exec('DROP TABLE sumatif_jenis');
+        $pdo->exec("ALTER TABLE $tmp RENAME TO sumatif_jenis");
+        $pdo->commit();
+    } catch (\Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
     }
 }
