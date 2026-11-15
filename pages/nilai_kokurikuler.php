@@ -132,6 +132,11 @@ if (!$siswas): ?>
 <form method="post" action="index.php?page=nilai_kokurikuler">
   <?= csrf_field() ?>
 
+  <div class="save-bar">
+    <button class="btn" type="submit">Simpan</button>
+    <span class="hint">Tombol menempel di atas — simpan kapan saja tanpa menggulir ke bawah.</span>
+  </div>
+
   <div class="card">
     <h3>Keterangan per Dimensi Profil Lulusan</h3>
     <p class="hint">Diisi manual per dimensi, <b>tersimpan terpisah untuk tiap kelas</b> (ganti kelas pada menu atas, keterangan ikut berganti sesuai yang tersimpan di kelas tersebut). Keterangan ini menjadi bagian
@@ -190,10 +195,7 @@ if (!$siswas): ?>
     </div>
   </div>
 
-  <div class="toolbar mt">
-    <button class="btn" type="submit">Simpan</button>
-    <span class="hint">Pilih <b>-</b> untuk menghapus predikat. Tekan <b>Simpan</b> — Deskripsi yang tidak diedit manual otomatis
-      digenerate ulang mengikuti predikat & keterangan dimensi terbaru sehingga selalu sama dengan rapor; teks manual tetap dipertahankan.</span>
-  </div>
+  <div class="hint mt">Pilih <b>-</b> untuk menghapus predikat. Tekan <b>Simpan</b> — Deskripsi yang tidak diedit manual otomatis
+    digenerate ulang mengikuti predikat & keterangan dimensi terbaru sehingga selalu sama dengan rapor; teks manual tetap dipertahankan.</div>
 </form>
 <?php endif; ?>

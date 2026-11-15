@@ -56,6 +56,10 @@ echo angkatan_lock_alert();
 <?php else: ?>
 <form method="post" action="index.php?page=kehadiran">
   <?= csrf_field() ?>
+  <div class="save-bar">
+    <button class="btn" type="submit">Simpan Kehadiran</button>
+    <span class="hint">Tombol menempel di atas — simpan kapan saja tanpa menggulir ke bawah.</span>
+  </div>
   <div class="table-wrap">
     <table class="tbl">
       <caption>Kelas <?= $c['kelas'] ?> - Semester <?= $c['semester'] ?> - <?= e($c['ta']) ?></caption>
@@ -87,9 +91,6 @@ echo angkatan_lock_alert();
       </tbody>
     </table>
   </div>
-  <div class="toolbar mt">
-    <button class="btn" type="submit">Simpan Kehadiran</button>
-    <span class="hint">Rekap jangka satu semester, ditampilkan pada tabel kehadiran raport.</span>
-  </div>
+  <div class="hint mt">Rekap jangka satu semester, ditampilkan pada tabel kehadiran raport.</div>
 </form>
 <?php endif; ?>

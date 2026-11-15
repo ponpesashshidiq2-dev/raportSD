@@ -55,6 +55,10 @@ if (!$siswas): ?>
 <?php else: ?>
 <form method="post" action="index.php?page=catatan_wali">
   <?= csrf_field() ?>
+  <div class="save-bar">
+    <button class="btn" type="submit">Simpan Catatan</button>
+    <span class="hint">Tombol menempel di atas — simpan kapan saja tanpa menggulir ke bawah.</span>
+  </div>
   <div class="table-wrap">
     <table class="tbl">
       <caption>Kelas <?= $c['kelas'] ?> - Semester <?= $c['semester'] ?> - <?= e($c['ta']) ?></caption>
@@ -77,10 +81,7 @@ if (!$siswas): ?>
       </tbody>
     </table>
   </div>
-  <div class="toolbar mt">
-    <button class="btn" type="submit">Simpan Catatan</button>
-    <span class="hint">Kosongkan teks untuk menghapus catatan. Teks tampil apa adanya (boleh beberapa baris) pada kotak raport;
-      catatan yang terisi juga membuat penilaian <b>Perkembangan</b> pada KEPUTUSAN semester 2 menjadi <b>Terpenuhi Baik</b>.</span>
-  </div>
+  <div class="hint mt">Kosongkan teks untuk menghapus catatan. Teks tampil apa adanya (boleh beberapa baris) pada kotak raport;
+    catatan yang terisi juga membuat penilaian <b>Perkembangan</b> pada KEPUTUSAN semester 2 menjadi <b>Terpenuhi Baik</b>.</div>
 </form>
 <?php endif; ?>

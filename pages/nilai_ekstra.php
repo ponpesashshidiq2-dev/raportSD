@@ -12,27 +12,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('nilai_ekstra');
     }
     $nilai = $_POST['nilai'] ?? [];
-    $ekdesk = $_POST['ekdesk'] ?? [];
     $tersimpan = 0;
     db()->beginTransaction();
     try {
-        foreach ($ekstraList as $ek) {
-            $teks = trim((string) ($ekdesk[$ek['id']] ?? ''));
-            $where = 'ekstra_id=? AND ta=? AND semester=? AND kelas=?';
-            $par = [$ek['id'], $c['ta'], $c['semester'], $c['kelas']];
-            $adaD = one("SELECT ekstra_id FROM ekstra_deskripsi WHERE $where", $par);
-            if ($teks === '') {
-                if ($adaD) {
-                    run("DELETE FROM ekstra_deskripsi WHERE $where", $par);
-                }
-                run("UPDATE nilai_ekstra SET catatan='' WHERE ekstra_id=? AND ta=? AND semester=? AND kelas=?", $par);
-            } elseif ($adaD) {
-                update_row('ekstra_deskripsi', ['deskripsi' => $teks], $where, $par);
-            } else {
-                insert_row('ekstra_deskripsi', ['ekstra_id' => $ek['id'], 'ta' => $c['ta'],
-                    'semester' => $c['semester'], 'kelas' => $c['kelas'], 'deskripsi' => $teks]);
-            }
-        }
         foreach ($ekstraList as $ek) {
             foreach ($siswas as $s) {
                 $key = $ek['id'] . '_' . $s['id'];
@@ -58,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
         db()->commit();
-        flash_set('success', "Nilai ekstrakurikuler tersimpan: $tersimpan sel. Deskripsi per kegiatan tersimpan sekali untuk semua siswa.");
+        flash_set('success', "Nilai ekstrakurikuler tersimpan: $tersimpan sel.");
     } catch (Throwable $ex) {
         db()->rollBack();
         flash_set('error', 'Gagal menyimpan: ' . $ex->getMessage());
@@ -71,24 +53,6 @@ foreach (all('SELECT ekstra_id, siswa_id, predikat FROM nilai_ekstra WHERE ta=? 
     [$c['ta'], $c['semester'], $c['kelas']]) as $r) {
     $existing[$r['ekstra_id'] . '_' . $r['siswa_id']] = $r['predikat'];
 }
-$ekDesk = [];
-foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND semester=? AND kelas=?',
-    [$c['ta'], $c['semester'], $c['kelas']]) as $r) {
-    $ekDesk[(int) $r['ekstra_id']] = $r['deskripsi'];
-}
-$legacy = [];
-foreach (all("SELECT n.ekstra_id AS eid, MIN(NULLIF(n.catatan, '')) AS t FROM nilai_ekstra n
-    WHERE n.ta=? AND n.semester=? AND n.kelas=? GROUP BY n.ekstra_id",
-    [$c['ta'], $c['semester'], $c['kelas']]) as $r) {
-    if ($r['t'] !== null && $r['t'] !== '') {
-        $legacy[(int) $r['eid']] = (string) $r['t'];
-    }
-}
-foreach ($ekstraList as $ek) {
-    if (($ekDesk[(int) $ek['id']] ?? '') === '' && isset($legacy[(int) $ek['id']])) {
-        $ekDesk[(int) $ek['id']] = $legacy[(int) $ek['id']];
-    }
-}
 
 page_head('Input Nilai Ekstrakurikuler', 'Siswa hanya menampilkan kegiatan yang nilainya diisi pada raport.');
 echo context_bar();
@@ -100,18 +64,9 @@ if (!$ekstraList): ?>
 <?php else: ?>
 <form method="post" action="index.php?page=nilai_ekstra">
   <?= csrf_field() ?>
-  <div class="card">
-    <h3>Deskripsi Ekstrakurikuler — diisi sekali per kegiatan</h3>
-    <p class="hint">Diisi sebagai lanjutan kalimat pada raport, mis. <i>"Ananda Budi Santoso sangat baik dalam keterampilan ..."</i> —
-      predikat A = <b>sangat baik</b>, B = <b>Baik</b>, C = <b>Cukup</b>, D = <b>Kurang</b>; teks yang sama tampil untuk semua siswa
-      (kolom predikat tidak dicetak, hanya nama kegiatan + keterangan). Kosongkan untuk tidak menampilkan keterangan.</p>
-    <?php foreach ($ekstraList as $ek): ?>
-      <div class="field" style="margin-top:8px">
-        <label><?= e($ek['nama']) ?></label>
-        <input type="text" name="ekdesk[<?= (int) $ek['id'] ?>]" value="<?= e($ekDesk[(int) $ek['id']] ?? '') ?>"
-          maxlength="300" placeholder="Deskripsi kegiatan (opsional)">
-      </div>
-    <?php endforeach; ?>
+  <div class="save-bar">
+    <button class="btn" type="submit">Simpan Nilai Ekstrakurikuler</button>
+    <span class="hint">Pilih <b>-</b> untuk menghapus nilai. Baris menempel di atas saat digulir — tidak perlu scroll ke bawah untuk menyimpan.</span>
   </div>
   <div class="table-wrap">
     <table class="tbl">
@@ -145,9 +100,7 @@ if (!$ekstraList): ?>
       </tbody>
     </table>
   </div>
-  <div class="toolbar mt">
-    <button class="btn" type="submit">Simpan Nilai Ekstrakurikuler</button>
-    <span class="hint">Pilih <b>-</b> untuk menghapus nilai. Deskripsi diisi <b>sekali per kegiatan</b> (kartu di atas) dan tampil sama untuk semua siswa pada raport.</span>
-  </div>
+  <div class="hint mt">Pilih <b>-</b> untuk menghapus nilai. Deskripsi per kegiatan diisi pada menu
+    <a href="index.php?page=ekstra">Ekstrakurikuler</a> (kartu "Deskripsi Ekstrakurikuler") — teks yang sama tampil untuk semua siswa pada raport.</div>
 </form>
 <?php endif; ?>

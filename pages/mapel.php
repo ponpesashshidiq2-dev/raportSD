@@ -96,6 +96,11 @@ echo context_bar();
     <input type="hidden" name="aksi" value="simpan">
     <input type="hidden" name="id" value="<?= (int) ($edit['id'] ?? 0) ?>">
     <h3><?= $edit ? 'Ubah Mata Pelajaran' : 'Tambah Mata Pelajaran' ?></h3>
+    <div class="save-bar save-bar-in">
+      <button class="btn" type="submit"><?= $edit ? 'Simpan Perubahan' : 'Tambah Mapel' ?></button>
+      <?php if ($edit): ?><a class="btn secondary" href="index.php?page=mapel">Batal</a><?php endif; ?>
+      <span class="hint">Tombol menempel di atas — simpan tanpa menggulir.</span>
+    </div>
     <div class="form-row">
       <div class="field"><label>Nama Mapel</label><input type="text" name="nama" value="<?= e($edit['nama'] ?? '') ?>" required></div>
       <div class="field">
@@ -112,10 +117,6 @@ echo context_bar();
       <div class="field"><label>Urutan</label><input type="number" name="urutan" value="<?= (int) ($edit['urutan'] ?? 0) ?>"></div>
     </div>
     <label class="check mb"><input type="checkbox" name="aktif" value="1"<?= !$edit || $edit['aktif'] ? ' checked' : '' ?>> Aktif</label>
-    <div class="page-actions">
-      <button class="btn" type="submit"><?= $edit ? 'Simpan Perubahan' : 'Tambah Mapel' ?></button>
-      <?php if ($edit): ?><a class="btn secondary" href="index.php?page=mapel">Batal</a><?php endif; ?>
-    </div>
   </form>
   <?php elseif ($edit): ?>
     <div class="alert alert-info">Hanya administrator yang dapat mengubah mata pelajaran.</div>

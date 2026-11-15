@@ -66,6 +66,11 @@ page_head('Pengguna', 'Akun multiuser: administrator, wali kelas, dan kepala sek
   <input type="hidden" name="aksi" value="simpan">
   <input type="hidden" name="id" value="<?= (int) ($edit['id'] ?? 0) ?>">
   <h3><?= $edit ? 'Ubah Pengguna' : 'Tambah Pengguna' ?></h3>
+  <div class="save-bar save-bar-in">
+    <button class="btn" type="submit"><?= $edit ? 'Simpan Perubahan' : 'Tambah Pengguna' ?></button>
+    <?php if ($edit): ?><a class="btn secondary" href="index.php?page=users">Batal</a><?php endif; ?>
+    <span class="hint">Tombol menempel di atas — simpan tanpa menggulir.</span>
+  </div>
   <div class="form-row">
     <div class="field"><label>Username</label><input type="text" name="username" value="<?= e($edit['username'] ?? '') ?>" required></div>
     <div class="field"><label>Nama Lengkap</label><input type="text" name="nama" value="<?= e($edit['nama'] ?? '') ?>" required></div>
@@ -83,10 +88,6 @@ page_head('Pengguna', 'Akun multiuser: administrator, wali kelas, dan kepala sek
     </div>
   </div>
   <label class="check mb"><input type="checkbox" name="aktif" value="1"<?= !$edit || $edit['aktif'] ? ' checked' : '' ?>> Akun aktif</label>
-  <div class="page-actions">
-    <button class="btn" type="submit"><?= $edit ? 'Simpan Perubahan' : 'Tambah Pengguna' ?></button>
-    <?php if ($edit): ?><a class="btn secondary" href="index.php?page=users">Batal</a><?php endif; ?>
-  </div>
 </form>
 <?php endif; ?>
 

@@ -186,6 +186,11 @@ echo angkatan_lock_alert();
     <input type="hidden" name="mapel_id" value="<?= $mapelId ?>">
     <input type="hidden" name="tp_filter" value="<?= $tpSel ?>">
     <input type="hidden" name="jilid_filter" value="<?= $jilidSel ?>">
+    <div class="save-bar">
+      <button class="btn" type="submit">Simpan Nilai Formatif</button>
+      <span class="grid-status" id="saveStatus" hidden>Belum tersimpan</span>
+      <span class="hint">Tombol menempel di atas — simpan kapan saja tanpa menggulir ke bawah.</span>
+    </div>
     <div class="table-wrap">
       <table class="tbl" data-grid>
         <caption><?= e($mapel['nama']) ?><?= $isTahsin ? ' - Jilid ' . $jilidSel : '' ?> - Kelas <?= $c['kelas'] ?> - Semester <?= $c['semester'] ?> - <?= e($c['ta']) ?></caption>
@@ -231,13 +236,9 @@ echo angkatan_lock_alert();
         </tbody>
       </table>
     </div>
-    <div class="toolbar mt">
-      <button class="btn" type="submit">Simpan Nilai Formatif</button>
-      <span class="grid-status" id="saveStatus" hidden>Belum tersimpan</span>
-      <span class="hint"><?= $isTahsin
-          ? 'Kosongkan sel untuk menghapus nilai. Kolom Jilid menyimpan jilid tiap siswa (1-9) — TP yang dinilai mengikuti Jilid terpilih di atas.'
-          : 'Kosongkan sel untuk menghapus nilai. Rentang 0-100. Penyimpanan hanya memengaruhi TP yang ditampilkan.' ?>
-        Mode Spreadsheet: panah/Tab pindah sel, klik header untuk pilih kolom/baris, salin-tempel dari Excel didukung, Enter = simpan &amp; lanjut, Esc = batalkan.</span>
-    </div>
+    <div class="hint mt"><?= $isTahsin
+        ? 'Kosongkan sel untuk menghapus nilai. Kolom Jilid menyimpan jilid tiap siswa (1-9) — TP yang dinilai mengikuti Jilid terpilih di atas.'
+        : 'Kosongkan sel untuk menghapus nilai. Rentang 0-100. Penyimpanan hanya memengaruhi TP yang ditampilkan.' ?>
+      Mode Spreadsheet: panah/Tab pindah sel, klik header untuk pilih kolom/baris, salin-tempel dari Excel didukung, Enter = simpan &amp; lanjut, Esc = batalkan.</div>
   </form>
 <?php endif; ?>

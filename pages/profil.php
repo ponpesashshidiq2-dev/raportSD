@@ -109,6 +109,11 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
   <?= csrf_field() ?>
   <input type="hidden" name="aksi" value="simpan">
 
+  <div class="save-bar">
+    <button class="btn" type="submit">Simpan Profil &amp; Konteks</button>
+    <span class="hint">Tombol menempel di atas — simpan kapan saja tanpa menggulir ke bawah.</span>
+  </div>
+
   <div class="grid grid-2">
     <div class="card">
       <h3>Identitas Sekolah</h3>
@@ -190,7 +195,6 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
         </div>
       </div>
       <div class="hint mb">Nilai Akhir = rata-rata formatif &times; bobot + rata-rata sumatif &times; bobot.</div>
-      <button class="btn" type="submit">Simpan Profil &amp; Konteks</button>
     </div>
   </div>
 </form>
@@ -237,6 +241,7 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
       <?php else: ?>
         <div class="hint mb">Diisi sendiri oleh pengguna untuk <b>setiap kelas dan semester</b>. Tanda tangan raport mengikuti kelas &amp; semester konteks. Baris <b>konteks aktif</b> ditandai.</div>
       <?php endif; ?>
+      <div class="save-bar save-bar-in"><button class="btn" type="submit"<?= $disabledEdit ?>>Simpan Wali Kelas</button><span class="hint">Tombol menempel di atas tabel — simpan tanpa menggulir ke bawah.</span></div>
       <?php for ($s = 1; $s <= 2; $s++): ?>
         <h4 style="margin:14px 0 6px">Semester <?= $s ?> <?= $s === (int) $p['semester'] ? '<span class="badge badge-blue">konteks aktif</span>' : '' ?></h4>
         <div class="table-wrap">
@@ -256,7 +261,6 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
           </table>
         </div>
       <?php endfor; ?>
-      <div class="mt"><button class="btn" type="submit"<?= $disabledEdit ?>>Simpan Wali Kelas</button></div>
     </div>
   </form>
 

@@ -2,16 +2,22 @@
 $c = ctx();
 $p = profil();
 $kelas = $c['kelas'];
+$kaKunci = kelas_angkatan();
+$kelasSiswa = $kaKunci ?? $kelas;
 
-$semuaSiswa = all("SELECT * FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelas]);
+$semuaSiswa = all("SELECT * FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
 $terpilih = [];
+$pilihanBasi = false;
 if (isset($_GET['s'])) {
     $ids = array_map('intval', (array) $_GET['s']);
-    $terpilih = array_filter($semuaSiswa, fn($s) => in_array((int) $s['id'], $ids, true));
+    $terpilih = array_values(array_filter($semuaSiswa, fn($s) => in_array((int) $s['id'], $ids, true)));
+    if (!$terpilih && $semuaSiswa !== []) {
+        $pilihanBasi = true;
+        $terpilih = $semuaSiswa;
+    }
 } else {
     $terpilih = $semuaSiswa;
 }
-$terpilih = array_values($terpilih);
 
 $tglAman = function ($v): string {
     $v = trim((string) $v);
@@ -26,6 +32,10 @@ $tglAman = function ($v): string {
 
 page_head('Cetak Sampul Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] . ' - Semester ' . $c['semester'] . ' - TA ' . $c['ta'],
     '<button class="btn" id="printBtn" type="button">Cetak / Simpan PDF</button>');
+echo angkatan_lock_alert();
+if ($pilihanBasi): ?>
+  <div class="alert alert-info">Pilihan siswa sebelumnya tidak berlaku pada kelas ini — menampilkan seluruh siswa kelas <?= (int) $kelas ?>.</div>
+<?php endif; ?>
 ?>
 <div class="raport-tools no-print">
   <form method="get" action="index.php" class="card" style="margin:0;padding:12px 14px;width:100%">
@@ -47,7 +57,9 @@ page_head('Cetak Sampul Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['f
   </form>
 </div>
 
-<?php if (!$terpilih): ?>
+<?php if (!$semuaSiswa): ?>
+  <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $kelas) ?></div>
+<?php elseif (!$terpilih): ?>
   <div class="card empty">Tidak ada siswa dipilih.</div>
 <?php endif; ?>
 

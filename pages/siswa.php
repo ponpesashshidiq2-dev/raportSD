@@ -515,6 +515,11 @@ page_head('Data Siswa', 'Kelola data peserta didik — daftar terkunci sesuai an
   <input type="hidden" name="aksi" value="simpan">
   <input type="hidden" name="id" value="<?= (int) ($edit['id'] ?? 0) ?>">
   <h3><?= $edit ? 'Ubah Data Siswa' : 'Tambah Siswa' ?></h3>
+  <div class="save-bar save-bar-in">
+    <button class="btn" type="submit"><?= $edit ? 'Simpan Perubahan' : 'Tambah Siswa' ?></button>
+    <?php if ($edit): ?><a class="btn secondary" href="index.php?page=siswa">Batal</a><?php endif; ?>
+    <span class="hint">Tombol menempel di atas — simpan tanpa menggulir ke bawah.</span>
+  </div>
   <div class="form-row">
     <div class="field"><label>Nama Siswa</label><input type="text" name="nama" value="<?= e($edit['nama'] ?? '') ?>" required></div>
     <div class="field"><label>NIS</label><input type="text" name="nis" value="<?= e($edit['nis'] ?? '') ?>"></div>
@@ -597,10 +602,6 @@ page_head('Data Siswa', 'Kelola data peserta didik — daftar terkunci sesuai an
       <textarea name="catatan_wali" rows="3" placeholder="Catatan wali kelas untuk raport semester ini — tampil pada kotak Catatan Wali Kelas di raport cetak..."><?= e($catatanWali) ?></textarea>
       <div class="hint">Khusus siswa yang sedang diubah/ditambah. Tampil di raport sesuai semester &amp; tahun ajaran konteks.</div>
     </div>
-  </div>
-  <div class="page-actions">
-    <button class="btn" type="submit"><?= $edit ? 'Simpan Perubahan' : 'Tambah Siswa' ?></button>
-    <?php if ($edit): ?><a class="btn secondary" href="index.php?page=siswa">Batal</a><?php endif; ?>
   </div>
 </form>
 

@@ -22,16 +22,28 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     csrf_verify();
     if (user() && (($_POST['aksi'] ?? '') === 'switch_kelas')) {
         $k = min(6, max(1, (int) ($_POST['kelas'] ?? 0)));
+        $s = (int) ($_POST['semester'] ?? 0);
+        if ($s !== 1 && $s !== 2) {
+            $s = (int) profil()['semester'];
+        }
         $old = (int) profil()['kelas_aktif'];
-        update_row('profil', ['kelas_aktif' => $k, 'fase' => fase_of($k)], 'id=?', [1]);
+        $oldS = (int) profil()['semester'];
+        update_row('profil', ['kelas_aktif' => $k, 'fase' => fase_of($k), 'semester' => $s], 'id=?', [1]);
         $back = $_POST['kembali'] ?? 'dashboard';
         if (!is_string($back) || !preg_match('/^[a-z_]+$/', $back) || !menu_allowed($back)) {
             $back = 'dashboard';
         }
-        if ($old === $k) {
-            flash_set('success', 'Sudah berada di Kelas ' . $k . '. Seluruh data kelas tetap tersimpan dan dapat dibuka kembali kapan saja.');
+        $ubah = [];
+        if ($old !== $k) {
+            $ubah[] = 'Kelas ' . $k;
+        }
+        if ($oldS !== $s) {
+            $ubah[] = 'Semester ' . $s;
+        }
+        if (!$ubah) {
+            flash_set('success', 'Sudah berada di Kelas ' . $k . ' Semester ' . $s . '. Seluruh data kelas tetap tersimpan dan dapat dibuka kembali kapan saja.');
         } else {
-            flash_set('success', 'Konteks dipindah ke Kelas ' . $k . '. Data kelas sebelumnya (siswa, nilai, raport) tetap tersimpan dan dapat dibuka kembali kapan saja.');
+            flash_set('success', 'Konteks dipindah ke ' . implode(' dan ', $ubah) . '. Data kelas sebelumnya (siswa, nilai, raport) tetap tersimpan dan dapat dibuka kembali kapan saja.');
         }
         redirect($back);
     }

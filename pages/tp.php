@@ -524,10 +524,11 @@ if (is_admin() && $tpBawaanCount > 0): ?>
       <input type="hidden" name="kelas" value="<?= $kelasSel ?>">
       <input type="hidden" name="sem" value="<?= $semSel ?>">
       <input type="hidden" name="jilid" value="<?= $jilidSel ?>">
-      <textarea name="deskripsi" rows="5" <?= is_admin() ? '' : 'readonly' ?>><?= e($cp['deskripsi'] ?? '') ?></textarea>
       <?php if (is_admin()): ?>
-        <div class="mt"><button class="btn" type="submit">Simpan CP</button></div>
-      <?php else: ?>
+        <div class="save-bar save-bar-in"><button class="btn" type="submit">Simpan CP</button><span class="hint">Tombol menempel di atas — simpan tanpa menggulir.</span></div>
+      <?php endif; ?>
+      <textarea name="deskripsi" rows="5" <?= is_admin() ? '' : 'readonly' ?>><?= e($cp['deskripsi'] ?? '') ?></textarea>
+      <?php if (!is_admin()): ?>
         <div class="hint mt">Tampilan hanya-baca untuk peran Anda.</div>
       <?php endif; ?>
     </form>
@@ -544,6 +545,11 @@ if (is_admin() && $tpBawaanCount > 0): ?>
       <input type="hidden" name="kelas" value="<?= $kelasSel ?>">
       <input type="hidden" name="sem" value="<?= $semSel ?>">
       <input type="hidden" name="jilid" value="<?= $jilidSel ?>">
+      <div class="save-bar save-bar-in">
+        <button class="btn" type="submit"><?= $editTp ? 'Simpan Perubahan' : 'Tambah TP' ?></button>
+        <?php if ($editTp): ?><a class="btn secondary" href="index.php?page=tp&mapel=<?= $mapelId ?>&kelas=<?= $kelasSel ?>&sem=<?= $semSel ?>&jilid=<?= $jilidSel ?>">Batal</a><?php endif; ?>
+        <span class="hint">Tombol menempel di atas — simpan tanpa menggulir.</span>
+      </div>
       <div class="field">
         <label>Deskripsi Tujuan Pembelajaran</label>
         <textarea name="deskripsi" rows="3" placeholder="Contoh: Menganalisis struktur teks fiksi" required><?= e($editTp['deskripsi'] ?? '') ?></textarea>
@@ -551,10 +557,6 @@ if (is_admin() && $tpBawaanCount > 0): ?>
       </div>
       <div class="form-row">
         <div class="field"><label>Urutan</label><input type="number" name="urutan" min="1" value="<?= (int) ($editTp['urutan'] ?? count($tps) + 1) ?>"></div>
-      </div>
-      <div class="page-actions">
-        <button class="btn" type="submit"><?= $editTp ? 'Simpan Perubahan' : 'Tambah TP' ?></button>
-        <?php if ($editTp): ?><a class="btn secondary" href="index.php?page=tp&mapel=<?= $mapelId ?>&kelas=<?= $kelasSel ?>&sem=<?= $semSel ?>&jilid=<?= $jilidSel ?>">Batal</a><?php endif; ?>
       </div>
     </form>
     <?php else: ?>

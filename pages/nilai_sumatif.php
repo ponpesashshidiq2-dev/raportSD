@@ -186,6 +186,11 @@ echo angkatan_lock_alert();
     <?= csrf_field() ?>
     <input type="hidden" name="aksi" value="simpan">
     <input type="hidden" name="mapel_id" value="<?= $mapelId ?>">
+    <div class="save-bar">
+      <?php if (can_edit()): ?><button class="btn" type="submit">Simpan Nilai Sumatif</button><?php endif; ?>
+      <span class="grid-status" id="saveStatus" hidden>Belum tersimpan</span>
+      <span class="hint">Tombol menempel di atas — simpan kapan saja tanpa menggulir ke bawah.</span>
+    </div>
     <div class="table-wrap">
       <table class="tbl" data-grid>
         <caption><?= e($mapel['nama']) ?> - Kelas <?= $c['kelas'] ?> - Semester <?= $c['semester'] ?> - <?= e($c['ta']) ?></caption>
@@ -233,11 +238,7 @@ echo angkatan_lock_alert();
         </tbody>
       </table>
     </div>
-    <div class="toolbar mt">
-      <?php if (can_edit()): ?><button class="btn" type="submit">Simpan Nilai Sumatif</button><?php endif; ?>
-      <span class="grid-status" id="saveStatus" hidden>Belum tersimpan</span>
-      <span class="hint">Rata Sumatif = rata-rata Lingkup Materi dan rata-rata Asesmen Akhir Semester. Nilai Akhir = formatif &times; <?= (int) profil()['bobot_formatif'] ?>% + sumatif &times; <?= (int) profil()['bobot_sumatif'] ?>% (terupdate setelah simpan). Mode Spreadsheet: panah/Tab pindah sel, klik header untuk pilih kolom/baris, salin-tempel dari Excel didukung.</span>
-    </div>
+    <div class="hint mt">Rata Sumatif = rata-rata Lingkup Materi dan rata-rata Asesmen Akhir Semester. Nilai Akhir = formatif &times; <?= (int) profil()['bobot_formatif'] ?>% + sumatif &times; <?= (int) profil()['bobot_sumatif'] ?>% (terupdate setelah simpan). Mode Spreadsheet: panah/Tab pindah sel, klik header untuk pilih kolom/baris, salin-tempel dari Excel didukung.</div>
   </form>
 <?php endif; ?>
 <?php endif; ?>
