@@ -420,8 +420,10 @@ function migrate_kokurikuler(PDO $pdo): void
       UNIQUE (siswa_id, ta, semester, kelas)
     )");
     $pdo->exec("CREATE TABLE IF NOT EXISTS kokurikuler_dimensi_ket (
-      idx INTEGER PRIMARY KEY,
-      teks TEXT NOT NULL DEFAULT ''
+      idx INTEGER NOT NULL,
+      kelas INTEGER NOT NULL,
+      teks TEXT NOT NULL DEFAULT '',
+      PRIMARY KEY (idx, kelas)
     )");
     if ((int) $pdo->query('SELECT COUNT(*) FROM kokurikuler_kegiatan')->fetchColumn() === 0) {
         require_once APP_DIR . '/app/kurikulum.php';
@@ -484,6 +486,78 @@ function migrate_tp_kelas(PDO $pdo): void
             $updNf->execute([(int) $new, (int) $tpid]);
         }
     }
+}
+
+function kelas_tersedia(PDO $pdo): array
+{
+    $dariSiswa = array_map('intval', $pdo->query('SELECT DISTINCT kelas FROM siswa WHERE kelas > 0')->fetchAll(PDO::FETCH_COLUMN));
+    return array_values(array_unique(array_merge([1, 2, 3, 4, 5, 6], $dariSiswa)));
+}
+
+function migrate_dimensi_ket(PDO $pdo): void
+{
+    $buat = "CREATE TABLE %s (
+      idx INTEGER NOT NULL,
+      kelas INTEGER NOT NULL,
+      teks TEXT NOT NULL DEFAULT '',
+      PRIMARY KEY (idx, kelas)
+    )";
+    if (!table_exists($pdo, 'kokurikuler_dimensi_ket')) {
+        $pdo->exec(sprintf($buat, 'kokurikuler_dimensi_ket'));
+        return;
+    }
+    $sqlLama = (string) $pdo->query("SELECT sql FROM sqlite_master WHERE type='table' AND name='kokurikuler_dimensi_ket'")->fetchColumn();
+    if (!preg_match('/PRIMARY KEY\s*\(\s*idx\s*,\s*kelas\s*\)/i', $sqlLama)) {
+        $tmp = 'kokurikuler_dimensi_ket_mig';
+        $pdo->beginTransaction();
+        try {
+            $pdo->exec('DROP TABLE IF EXISTS ' . $tmp);
+            $pdo->exec(sprintf($buat, $tmp));
+            $stmt = $pdo->prepare("INSERT OR IGNORE INTO $tmp (idx, kelas, teks) VALUES (?,?,?)");
+            foreach ($pdo->query('SELECT idx, teks FROM kokurikuler_dimensi_ket') as $r) {
+                $teks = trim((string) $r['teks']);
+                if ($teks === '') {
+                    continue;
+                }
+                foreach (kelas_tersedia($pdo) as $k) {
+                    $stmt->execute([(int) $r['idx'], $k, $teks]);
+                }
+            }
+            $pdo->exec('DROP TABLE kokurikuler_dimensi_ket');
+            $pdo->exec('ALTER TABLE ' . $tmp . ' RENAME TO kokurikuler_dimensi_ket');
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+    backfill_dimensi_ket($pdo);
+}
+
+function backfill_dimensi_ket(PDO $pdo): void
+{
+    if (!table_exists($pdo, 'kokurikuler_dimensi_ket')) {
+        return;
+    }
+    $cols = array_map(fn($c) => $c['name'], $pdo->query('PRAGMA table_info(kokurikuler_dimensi_ket)')->fetchAll(PDO::FETCH_ASSOC));
+    if (!in_array('kelas', $cols, true)) {
+        return;
+    }
+    $lama = $pdo->query('SELECT idx, teks FROM kokurikuler_dimensi_ket WHERE kelas=0')->fetchAll(PDO::FETCH_ASSOC);
+    if (!$lama) {
+        return;
+    }
+    $stmt = $pdo->prepare('INSERT OR IGNORE INTO kokurikuler_dimensi_ket (idx, kelas, teks) VALUES (?,?,?)');
+    foreach ($lama as $r) {
+        $teks = trim((string) $r['teks']);
+        if ($teks === '') {
+            continue;
+        }
+        foreach (kelas_tersedia($pdo) as $k) {
+            $stmt->execute([(int) $r['idx'], $k, $teks]);
+        }
+    }
+    $pdo->exec('DELETE FROM kokurikuler_dimensi_ket WHERE kelas=0');
 }
 
 function backfill_kelas_siswa(PDO $pdo): void

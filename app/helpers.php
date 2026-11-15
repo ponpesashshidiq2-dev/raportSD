@@ -23,6 +23,7 @@ function db(): PDO
         migrate_catatan_wali($pdo);
         migrate_ekstra_deskripsi($pdo);
         migrate_kokurikuler($pdo);
+        migrate_dimensi_ket($pdo);
         migrate_kelas_tabel($pdo);
         migrate_tp_kelas($pdo);
         migrate_jilid($pdo);

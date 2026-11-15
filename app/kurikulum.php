@@ -68,10 +68,11 @@ function predikat_kokurikuler_ops(): array
     return ['' => '-', 'Berkembang' => 'Berkembang', 'Cakap' => 'Cakap', 'Mahir' => 'Mahir'];
 }
 
-function dimensi_keterangan(): array
+function dimensi_keterangan(?int $kelas = null): array
 {
+    $k = $kelas ?? (int) ctx()['kelas'];
     $map = [];
-    foreach (all('SELECT idx, teks FROM kokurikuler_dimensi_ket') as $r) {
+    foreach (all('SELECT idx, teks FROM kokurikuler_dimensi_ket WHERE kelas=?', [$k]) as $r) {
         $map[(int) $r['idx']] = trim($r['teks']);
     }
     return $map;
@@ -87,10 +88,10 @@ function gabung_indo(array $a): string
     return implode(', ', $a) . ', dan ' . $last;
 }
 
-function generate_deskripsi_kokurikuler(array $predikat, string $nama = 'Ananda'): string
+function generate_deskripsi_kokurikuler(array $predikat, string $nama = 'Ananda', ?int $kelas = null): string
 {
     $kata = ['Mahir' => 'sangat baik', 'Cakap' => 'baik', 'Berkembang' => 'cukup baik'];
-    $ketDim = dimensi_keterangan();
+    $ketDim = dimensi_keterangan($kelas);
     $grup = [];
     foreach (array_keys(dimensi_kokurikuler()) as $i => $label) {
         $p = trim((string) ($predikat[$i] ?? ''));

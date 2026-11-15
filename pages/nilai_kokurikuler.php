@@ -18,10 +18,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         foreach (array_keys($dimensi) as $i => $label) {
             $t = trim((string) ($ketDimInput[$i] ?? ''));
-            if (one('SELECT idx FROM kokurikuler_dimensi_ket WHERE idx=?', [$i])) {
-                update_row('kokurikuler_dimensi_ket', ['teks' => $t], 'idx=?', [$i]);
+            $whereK = 'idx=? AND kelas=?';
+            $parK = [$i, $c['kelas']];
+            $adaK = one("SELECT idx FROM kokurikuler_dimensi_ket WHERE $whereK", $parK);
+            if ($t === '') {
+                if ($adaK) {
+                    run("DELETE FROM kokurikuler_dimensi_ket WHERE $whereK", $parK);
+                }
+            } elseif ($adaK) {
+                update_row('kokurikuler_dimensi_ket', ['teks' => $t], $whereK, $parK);
             } else {
-                insert_row('kokurikuler_dimensi_ket', ['idx' => $i, 'teks' => $t]);
+                insert_row('kokurikuler_dimensi_ket', ['idx' => $i, 'kelas' => $c['kelas'], 'teks' => $t]);
             }
         }
         foreach ($siswas as $s) {
@@ -40,13 +47,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $dLama = $adaC ? trim((string) $adaC['deskripsi']) : '';
             $manualOld = $adaC && (int) $adaC['desk_manual'] === 1;
             if ($dPosted === '') {
-                $d = generate_deskripsi_kokurikuler($arr, $s['nama']);
+                $d = generate_deskripsi_kokurikuler($arr, $s['nama'], $c['kelas']);
                 $manual = 0;
             } elseif ($dPosted !== $dLama) {
                 $d = $dPosted;
                 $manual = 1;
             } else {
-                $d = $manualOld ? $dPosted : generate_deskripsi_kokurikuler($arr, $s['nama']);
+                $d = $manualOld ? $dPosted : generate_deskripsi_kokurikuler($arr, $s['nama'], $c['kelas']);
                 $manual = $manualOld ? 1 : 0;
             }
             if (!$arr && $d === '') {
@@ -85,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $namaT = $ss['nama'];
                     }
                 }
-                $text = generate_deskripsi_kokurikuler($arr, $namaT);
+                $text = generate_deskripsi_kokurikuler($arr, $namaT, $c['kelas']);
                 if ($text !== '') {
                     update_row('kokurikuler_capaian', ['deskripsi' => $text, 'desk_manual' => 0], 'id=?', [$row['id']]);
                     $tergenerate++;
@@ -105,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirect('nilai_kokurikuler');
 }
 
-$ketDimMap = dimensi_keterangan();
+$ketDimMap = dimensi_keterangan((int) $c['kelas']);
 $capMap = [];
 foreach (all('SELECT siswa_id, predikat, deskripsi FROM kokurikuler_capaian WHERE ta=? AND semester=? AND kelas=?',
     [$c['ta'], $c['semester'], $c['kelas']]) as $r) {
@@ -127,7 +134,7 @@ if (!$siswas): ?>
 
   <div class="card">
     <h3>Keterangan per Dimensi Profil Lulusan</h3>
-    <p class="hint">Diisi manual per dimensi (sekali, berlaku untuk semua siswa). Keterangan ini menjadi bagian
+    <p class="hint">Diisi manual per dimensi, <b>tersimpan terpisah untuk tiap kelas</b> (ganti kelas pada menu atas, keterangan ikut berganti sesuai yang tersimpan di kelas tersebut). Keterangan ini menjadi bagian
       <i>"yang terlihat dari kemampuan ..."</i> pada deskripsi otomatis rapor untuk siswa yang dimensinya diberi predikat.</p>
     <div class="form-row">
       <?php foreach (array_keys($dimensi) as $i => $label): ?>

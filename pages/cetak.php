@@ -61,7 +61,7 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
     if ((int) ($capaianKok['desk_manual'] ?? 0) === 1) {
         $deskKok = trim((string) ($capaianKok['deskripsi'] ?? ''));
     } else {
-        $deskKok = generate_deskripsi_kokurikuler($arrPred, $s['nama']);
+        $deskKok = generate_deskripsi_kokurikuler($arrPred, $s['nama'], $kelas);
     }
     $nilaiEkstra = all('SELECT e.id AS eid, e.nama, n.predikat, n.catatan FROM nilai_ekstra n JOIN ekstra e ON e.id=n.ekstra_id
         WHERE n.siswa_id=? AND n.ta=? AND n.semester=? AND n.kelas=? ORDER BY e.urutan, e.nama', [$sid, $c['ta'], $c['semester'], $kelas]);
