@@ -48,7 +48,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 run('DELETE FROM ' . $t);
             }
             $allowed = db_tables();
+            $rootT = ['siswa', 'mapel', 'tp', 'ekstra', 'sumatif_jenis'];
             $inserted = 0;
+            $lewati = 0;
+            $adaLegacy = false;
             foreach ($data['tables'] as $t => $rows) {
                 if (!in_array($t, $allowed, true) || !is_array($rows)) {
                     continue;
@@ -57,28 +60,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!is_array($row)) {
                         continue;
                     }
-                    insert_row($t, $row);
-                    $inserted++;
+                    $legacyRow = in_array($t, $rootT, true)
+                        && (!isset($row['user_id']) || (int) $row['user_id'] === 0);
+                    try {
+                        insert_row($t, $row);
+                        $inserted++;
+                    } catch (Throwable $ex) {
+                        if ($legacyRow && str_contains($ex->getMessage(), 'UNIQUE constraint')) {
+                            $lewati++;
+                            $adaLegacy = true;
+                            continue;
+                        }
+                        throw $ex;
+                    }
                 }
+            }
+            if ($lewati > 0) {
+                run('DELETE FROM nilai_formatif WHERE tp_id NOT IN (SELECT id FROM tp) OR siswa_id NOT IN (SELECT id FROM siswa)');
+                run('DELETE FROM nilai_sumatif WHERE jenis_id NOT IN (SELECT id FROM sumatif_jenis) OR siswa_id NOT IN (SELECT id FROM siswa)');
             }
             db()->commit();
             backfill_kelas_siswa(db());
             backfill_dimensi_ket(db());
-            $legacyNote = '';
-            $rootT = ['siswa', 'mapel', 'tp', 'ekstra', 'sumatif_jenis'];
-            $perluAlih = false;
+            $target = 0;
             foreach ($rootT as $t) {
                 if ((int) scalar("SELECT COUNT(*) FROM $t WHERE user_id = 0 OR user_id IS NULL") > 0) {
-                    $perluAlih = true;
-                    break;
+                    if ($target <= 0) {
+                        $target = pemilik_data_lama(db());
+                    }
+                    run("UPDATE $t SET user_id = ? WHERE user_id = 0 OR user_id IS NULL", [$target]);
+                    $adaLegacy = true;
                 }
             }
-            if ($perluAlih) {
-                $target = pemilik_data_lama(db());
-                foreach ($rootT as $t) {
-                    run("UPDATE $t SET user_id = ? WHERE user_id = 0 OR user_id IS NULL", [$target]);
-                }
-                $legacyNote = ' Data backup lama dialihkan ke akun "Angkatan 6B".';
+            $legacyNote = $adaLegacy ? ' Data backup lama dialihkan ke akun "Angkatan 6B".' : '';
+            if ($lewati > 0) {
+                $legacyNote .= " $lewati baris duplikat data lama dilewati.";
             }
             db()->exec('PRAGMA foreign_keys = ON');
             flash_set('success', "Restore berhasil: $inserted baris dari " . count($data['tables']) . " tabel." . $legacyNote);

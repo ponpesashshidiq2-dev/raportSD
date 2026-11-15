@@ -6,7 +6,7 @@ $kelas = $c['kelas'];
 $totalSiswa = (int) scalar("SELECT COUNT(*) FROM siswa WHERE status='aktif'" . scope_user());
 $siswaKelas = (int) scalar("SELECT COUNT(*) FROM siswa WHERE status='aktif' AND kelas=?" . scope_user(), [$kelas]);
 $mapelRaport = mapel_raport($kelas);
-$tpCount = (int) scalar('SELECT COUNT(*) FROM tp WHERE kelas=? AND semester=?' . scope_user(), [$c['kelas'], $c['semester']]);
+    $tpCount = (int) scalar('SELECT COUNT(*) FROM tp WHERE kelas=? AND semester=?', [$c['kelas'], $c['semester']]);
 $ekstraCount = (int) scalar('SELECT COUNT(*) FROM ekstra WHERE 1=1' . scope_user());
 $kokCount = (int) scalar('SELECT COUNT(*) FROM kokurikuler_kegiatan');
 

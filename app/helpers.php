@@ -447,13 +447,13 @@ function capaian_kompetensi(int $siswa, int $mapel, string $ta, int $sem, string
     $rows = all(
         'SELECT tp.id, tp.deskripsi, AVG(n.nilai) AS rata FROM nilai_formatif n
          JOIN tp ON tp.id = n.tp_id
-         WHERE n.siswa_id=? AND n.mapel_id=? AND n.ta=? AND n.semester=?' . scope_user('tp.user_id') . '
-         GROUP BY tp.id, tp.deskripsi ORDER BY rata ASC',
+         WHERE n.siswa_id=? AND n.mapel_id=? AND n.ta=? AND n.semester=?'
+         . ' GROUP BY tp.id, tp.deskripsi ORDER BY rata ASC',
         [$siswa, $mapel, $ta, $sem]
     );
     if (!$rows) {
         $cp = null;
-        if (is_tahsin(one('SELECT nama FROM mapel WHERE id=?' . scope_user(), [$mapel]))) {
+        if (is_tahsin(one('SELECT nama FROM mapel WHERE id=?', [$mapel]))) {
             $j = jilid_siswa($siswa, $mapel, $ta, $sem);
             $cp = one("SELECT deskripsi FROM cp WHERE mapel_id=? AND fase IN ('',?) AND jilid IN (?,0)
                 ORDER BY jilid DESC LIMIT 1", [$mapel, $fase, $j]);
@@ -486,7 +486,7 @@ function mapel_raport(int $kelas): array
 {
     return all(
         'SELECT * FROM mapel WHERE aktif=1 AND kkm IS NOT NULL AND kkm<>""'
-        . ' AND ? BETWEEN kelas_min AND kelas_max' . scope_user()
+        . ' AND ? BETWEEN kelas_min AND kelas_max'
         . ' ORDER BY muatan, urutan, nama',
         [$kelas]
     );
@@ -496,7 +496,7 @@ function mapel_kelas(int $kelas): array
 {
     return all(
         'SELECT * FROM mapel WHERE aktif=1 AND ? BETWEEN kelas_min AND kelas_max'
-        . scope_user() . ' ORDER BY muatan, urutan, nama',
+        . ' ORDER BY muatan, urutan, nama',
         [$kelas]
     );
 }
@@ -532,7 +532,7 @@ function tgl_indo(?string $date = null): string
 
 function kkm_mapel(int $mapel): ?int
 {
-    $m = one('SELECT kkm FROM mapel WHERE id=?' . scope_user(), [$mapel]);
+    $m = one('SELECT kkm FROM mapel WHERE id=?', [$mapel]);
     if (!$m || $m['kkm'] === null || $m['kkm'] === '') {
         return null;
     }

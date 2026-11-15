@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int) ($_POST['id'] ?? 0);
         $kkmRaw = trim($_POST['kkm'] ?? '');
         $kkm = $kkmRaw === '' ? null : max(0, min(100, (int) $kkmRaw));
-        if (one('SELECT id FROM mapel WHERE id=?' . scope_user(), [$id])) {
+        if (one('SELECT id FROM mapel WHERE id=?', [$id])) {
             update_row('mapel', ['kkm' => $kkm], 'id=?', [$id]);
             flash_set('success', $kkm === null ? 'KKM dikosongkan.' : 'KKM tersimpan: ' . $kkm . '.');
         } else {
@@ -16,8 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         redirect('mapel');
     }
-    if (!can_edit()) {
-        flash_set('error', 'Anda tidak memiliki akses untuk mengubah mata pelajaran.');
+    if (!is_admin()) {
+        flash_set('error', 'Hanya administrator yang dapat mengubah mata pelajaran.');
         redirect('mapel');
     }
     if ($aksi === 'simpan') {
@@ -40,14 +40,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $data['kelas_max'] = $data['kelas_min'];
         }
         if ($id > 0) {
-            if (!one('SELECT id FROM mapel WHERE id=?' . scope_user(), [$id])) {
-                flash_set('error', 'Mapel tidak ditemukan atau bukan milik Anda.');
+            if (!one('SELECT id FROM mapel WHERE id=?', [$id])) {
+                flash_set('error', 'Mapel tidak ditemukan.');
                 redirect('mapel');
             }
             update_row('mapel', $data, 'id=?', [$id]);
             flash_set('success', 'Mata pelajaran diperbarui.');
         } else {
-            $data['urutan'] = $data['urutan'] ?: ((int) scalar('SELECT COALESCE(MAX(urutan),0) FROM mapel WHERE 1=1' . scope_user()) + 1);
+            $data['urutan'] = $data['urutan'] ?: ((int) scalar('SELECT COALESCE(MAX(urutan),0) FROM mapel') + 1);
             insert_row('mapel', $data + ['user_id' => (int) (user()['id'] ?? 0)]);
             flash_set('success', 'Mata pelajaran ditambahkan.');
         }
@@ -55,8 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($aksi === 'hapus') {
         $id = (int) ($_POST['id'] ?? 0);
-        if (!one('SELECT id FROM mapel WHERE id=?' . scope_user(), [$id])) {
-            flash_set('error', 'Mapel tidak ditemukan atau bukan milik Anda.');
+        if (!one('SELECT id FROM mapel WHERE id=?', [$id])) {
+            flash_set('error', 'Mapel tidak ditemukan.');
             redirect('mapel');
         }
         run('DELETE FROM nilai_formatif WHERE mapel_id=?', [$id]);
@@ -72,9 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $edit = null;
 if (!empty($_GET['edit'])) {
-    $edit = one('SELECT * FROM mapel WHERE id=?' . scope_user(), [(int) $_GET['edit']]);
+    $edit = one('SELECT * FROM mapel WHERE id=?', [(int) $_GET['edit']]);
 }
-$semuaMapel = all('SELECT * FROM mapel WHERE 1=1' . scope_user() . ' ORDER BY muatan, urutan, nama');
+$semuaMapel = all('SELECT * FROM mapel ORDER BY muatan, urutan, nama');
 $mapelKelas = mapel_kelas($c['kelas']);
 $muatanLabel = ['agama' => 'Muatan Agama', 'nasional' => 'Muatan Nasional', 'lokal' => 'Muatan Lokal'];
 
@@ -90,7 +90,7 @@ echo context_bar();
 
 <?php if ($tab === 'daftar'): ?>
 
-  <?php if (can_edit()): ?>
+  <?php if (is_admin()): ?>
   <form class="card" method="post" action="index.php?page=mapel">
     <?= csrf_field() ?>
     <input type="hidden" name="aksi" value="simpan">
@@ -118,7 +118,7 @@ echo context_bar();
     </div>
   </form>
   <?php elseif ($edit): ?>
-    <div class="alert alert-info">Anda tidak memiliki akses untuk mengubah mata pelajaran ini.</div>
+    <div class="alert alert-info">Hanya administrator yang dapat mengubah mata pelajaran.</div>
   <?php endif; ?>
 
   <div class="alert alert-info">
@@ -137,7 +137,7 @@ echo context_bar();
             <tr>
               <th class="center" style="width:40px">No</th><th>Mata Pelajaran</th>
               <th class="center">KKM</th><th class="center">Kelas</th><th class="center">TP</th>
-              <th class="center">Di Raport</th><th class="center">Status</th><?php if (can_edit()): ?><th class="center">Aksi</th><?php endif; ?>
+              <th class="center">Di Raport</th><th class="center">Status</th><?php if (is_admin()): ?><th class="center">Aksi</th><?php endif; ?>
             </tr>
           </thead>
           <tbody>
@@ -163,7 +163,7 @@ echo context_bar();
               <td class="center"><?= $tpN ?><div class="hint"><?= $tpT ? 'Sem ' . (int) $c['semester'] . ' / per Jilid' : 'Kls ' . (int) $c['kelas'] . ' / Sem ' . (int) $c['semester'] ?></div></td>
               <td class="center"><?= $adaKkm ? '<span class="badge badge-green">Ya</span>' : '<span class="badge badge-amber">Tidak</span>' ?></td>
               <td class="center"><?= $m['aktif'] ? '<span class="badge badge-blue">Aktif</span>' : '<span class="badge badge-gray">Nonaktif</span>' ?></td>
-              <?php if (can_edit()): ?>
+              <?php if (is_admin()): ?>
               <td class="center">
                 <a class="btn sm secondary" href="index.php?page=mapel&edit=<?= (int) $m['id'] ?>">Ubah</a>
                 <form method="post" action="index.php?page=mapel" data-confirm="Hapus mapel beserta nilai dan TP-nya?">

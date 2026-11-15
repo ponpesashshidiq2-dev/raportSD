@@ -4,17 +4,15 @@ $kaKunci = kelas_angkatan();
 $kelasSiswa = $kaKunci ?? (int) $c['kelas'];
 $mapelList = mapel_kelas($c['kelas']);
 $mapelId = (int) ($_GET['mapel'] ?? 0);
-$mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?' . scope_user(), [$mapelId]) : null;
+$mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;
 if (!$mapel && $mapelList) {
     $mapelId = (int) $mapelList[0]['id'];
-    $mapel = one('SELECT * FROM mapel WHERE id=?' . scope_user(), [$mapelId]);
+    $mapel = one('SELECT * FROM mapel WHERE id=?', [$mapelId]);
 } elseif (!$mapel) {
     $mapelId = 0;
 }
-$uidDomain = $mapel ? (int) $mapel['user_id'] : -1;
-$siswas = $uidDomain >= 0
-    ? all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? AND user_id=? ORDER BY nama", [$kelasSiswa, $uidDomain])
-    : [];
+$uidDomain = (int) (user()['id'] ?? 0);
+$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!can_edit()) {
@@ -23,13 +21,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $aksi = $_POST['aksi'] ?? '';
     $mapelId = (int) ($_POST['mapel_id'] ?? $mapelId);
-    $mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?' . scope_user(), [$mapelId]) : null;
+    $mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;
     if (!$mapel) {
-        flash_set('error', 'Mata pelajaran tidak valid atau bukan milik Anda.');
+        flash_set('error', 'Mata pelajaran tidak valid.');
         redirect('nilai_sumatif');
     }
-    $uidDomain = (int) $mapel['user_id'];
-    $siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? AND user_id=? ORDER BY nama", [$kelasSiswa, $uidDomain]);
+    $siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
 
     if ($aksi === 'jumlah_terapkan') {
         $jumlah = (int) ($_POST['jumlah'] ?? -1);

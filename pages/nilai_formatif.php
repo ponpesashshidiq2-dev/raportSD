@@ -4,10 +4,10 @@ $kaKunci = kelas_angkatan();
 $kelasSiswa = $kaKunci ?? (int) $c['kelas'];
 $mapelList = mapel_kelas($c['kelas']);
 $mapelId = (int) ($_GET['mapel'] ?? 0);
-$mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?' . scope_user(), [$mapelId]) : null;
+$mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;
 if (!$mapel && $mapelList) {
     $mapelId = (int) $mapelList[0]['id'];
-    $mapel = one('SELECT * FROM mapel WHERE id=?' . scope_user(), [$mapelId]);
+    $mapel = one('SELECT * FROM mapel WHERE id=?', [$mapelId]);
 } elseif (!$mapel) {
     $mapelId = 0;
 }
@@ -21,10 +21,7 @@ if ($tpSel && !array_filter($allTps, fn($t) => (int) $t['id'] === $tpSel)) {
     $tpSel = 0;
 }
 $tps = $tpSel ? array_values(array_filter($allTps, fn($t) => (int) $t['id'] === $tpSel)) : $allTps;
-$ownerUid = $mapel ? (int) $mapel['user_id'] : -1;
-$siswas = $ownerUid >= 0
-    ? all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? AND user_id=? ORDER BY nama", [$kelasSiswa, $ownerUid])
-    : [];
+$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!can_edit()) {
@@ -32,16 +29,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('nilai_formatif');
     }
     $mapelId = (int) ($_POST['mapel_id'] ?? 0);
-    $mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?' . scope_user(), [$mapelId]) : null;
+    $mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;
     $isTahsin = is_tahsin($mapel);
     $tpFilter = (int) ($_POST['tp_filter'] ?? 0);
     $jilidFilter = ($isTahsin && in_array($_POST['jilid_filter'] ?? '', $jilidOpsi, true)) ? (int) $_POST['jilid_filter'] : 1;
     if (!$mapel) {
-        flash_set('error', 'Mata pelajaran tidak valid atau bukan milik Anda.');
+        flash_set('error', 'Mata pelajaran tidak valid.');
         redirect('nilai_formatif');
     }
-    $ownerUid = (int) $mapel['user_id'];
-    $siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=? AND user_id=? ORDER BY nama", [$kelasSiswa, $ownerUid]);
+    $siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
     $tpList = array_column(all('SELECT * FROM tp WHERE mapel_id=? AND kelas=? AND jilid=? AND semester=?',
         [$mapelId, $isTahsin ? 0 : $c['kelas'], $isTahsin ? $jilidFilter : 0, $c['semester']]), null, 'id');
     $siswaList = array_column($siswas, null, 'id');

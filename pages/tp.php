@@ -5,11 +5,11 @@ $mapelId = (int) ($_GET['mapel'] ?? 0);
 $kelasSel = in_array($_GET['kelas'] ?? '', ['1', '2', '3', '4', '5', '6'], true) ? (int) $_GET['kelas'] : (int) $c['kelas'];
 $semSel = in_array($_GET['sem'] ?? '', ['1', '2'], true) ? (int) $_GET['sem'] : (int) $c['semester'];
 $faseSel = fase_of($kelasSel);
-$semuaMapel = all('SELECT * FROM mapel WHERE 1=1' . scope_user() . ' ORDER BY muatan, urutan, nama');
+$semuaMapel = all('SELECT * FROM mapel ORDER BY muatan, urutan, nama');
 if ($mapelId <= 0 && $semuaMapel) {
     $mapelId = (int) $semuaMapel[0]['id'];
 }
-$mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?' . scope_user(), [$mapelId]) : null;
+$mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;
 $isTahsin = is_tahsin($mapel);
 $jilidOpsi = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 $jilidSel = in_array($_GET['jilid'] ?? '', $jilidOpsi, true) ? (int) $_GET['jilid'] : 1;
@@ -29,7 +29,7 @@ function tp_ids_bawaan(): array
     }
     $keys = array_keys($set);
     $in = implode(',', array_fill(0, count($keys), '?'));
-    return array_column(all("SELECT id FROM tp WHERE deskripsi IN ($in)" . scope_user(), $keys), 'id');
+    return array_column(all("SELECT id FROM tp WHERE deskripsi IN ($in)", $keys), 'id');
 }
 
 function tp_header_map(array $header): array
@@ -71,7 +71,7 @@ function tp_import_rows(array $rows, string $mode, int $defaultKelas = 1, int $d
     $mapelLower = [];
     $mapelOwner = [];
     $tahsinIds = [];
-    foreach (all('SELECT id, nama, user_id FROM mapel WHERE 1=1' . scope_user()) as $m) {
+    foreach (all('SELECT id, nama, user_id FROM mapel') as $m) {
         $namaLower = mb_strtolower($m['nama']);
         $mapelLower[$namaLower] = (int) $m['id'];
         $mapelOwner[(int) $m['id']] = (int) $m['user_id'];
@@ -205,8 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $kelasSel = in_array($_POST['kelas'] ?? '', ['1', '2', '3', '4', '5', '6'], true) ? (int) $_POST['kelas'] : $kelasSel;
     $semSel = in_array($_POST['sem'] ?? '', ['1', '2'], true) ? (int) $_POST['sem'] : $semSel;
     $faseSel = fase_of($kelasSel);
-    $mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?' . scope_user(), [$mapelId]) : null;
-    $mapelAsing = $mapelId > 0 && $mapel === null;
+    $mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;
     $isTahsin = is_tahsin($mapel);
     if ($isTahsin && in_array($_POST['jilid'] ?? '', $jilidOpsi, true)) {
         $jilidSel = (int) $_POST['jilid'];
@@ -244,8 +243,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($aksi === 'tp_simpan') {
-        if (!can_edit()) {
-            flash_set('error', 'Anda tidak memiliki akses untuk mengubah TP.');
+        if (!is_admin()) {
+            flash_set('error', 'Hanya administrator yang dapat mengubah TP.');
             redirect('tp');
         }
         $id = (int) ($_POST['id'] ?? 0);
@@ -258,13 +257,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'deskripsi' => trim($_POST['deskripsi'] ?? ''),
             'urutan' => (int) ($_POST['urutan'] ?? 0),
         ];
-        if ($data['deskripsi'] === '' || $mapelId <= 0 || $mapelAsing) {
-            flash_set('error', 'Deskripsi TP wajib diisi atau mapel bukan milik Anda.');
+        if ($data['deskripsi'] === '' || $mapelId <= 0) {
+            flash_set('error', 'Deskripsi TP wajib diisi atau pilih mata pelajaran.');
             redirect('tp', $back);
         }
         if ($id > 0) {
-            if (!one('SELECT t.id FROM tp t JOIN mapel m ON m.id = t.mapel_id WHERE t.id=?' . scope_user('m.user_id'), [$id])) {
-                flash_set('error', 'TP tidak ditemukan atau bukan milik Anda.');
+            if (!one('SELECT t.id FROM tp t JOIN mapel m ON m.id = t.mapel_id WHERE t.id=?', [$id])) {
+                flash_set('error', 'TP tidak ditemukan.');
                 redirect('tp', $back);
             }
             update_row('tp', $data, 'id=?', [$id]);
@@ -283,12 +282,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($aksi === 'tp_hapus_lama') {
-        if (!can_edit()) {
-            flash_set('error', 'Anda tidak memiliki akses.');
-            redirect('tp');
-        }
-        if ($mapelAsing) {
-            flash_set('error', 'Mapel bukan milik Anda.');
+        if (!is_admin()) {
+            flash_set('error', 'Hanya administrator yang dapat menghapus TP lama.');
             redirect('tp');
         }
         $ids = array_column(all('SELECT id FROM tp WHERE mapel_id=? AND jilid=0', [$mapelId]), 'id');
@@ -309,13 +304,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($aksi === 'tp_hapus') {
-        if (!can_edit()) {
-            flash_set('error', 'Anda tidak memiliki akses.');
+        if (!is_admin()) {
+            flash_set('error', 'Hanya administrator yang dapat menghapus TP.');
             redirect('tp');
         }
         $tid = (int) ($_POST['id'] ?? 0);
-        if (!one('SELECT t.id FROM tp t JOIN mapel m ON m.id = t.mapel_id WHERE t.id=?' . scope_user('m.user_id'), [$tid])) {
-            flash_set('error', 'TP tidak ditemukan atau bukan milik Anda.');
+        if (!one('SELECT t.id FROM tp t JOIN mapel m ON m.id = t.mapel_id WHERE t.id=?', [$tid])) {
+            flash_set('error', 'TP tidak ditemukan.');
             redirect('tp', $back);
         }
         run('DELETE FROM nilai_formatif WHERE tp_id=?', [$tid]);
@@ -393,7 +388,7 @@ if (isset($_GET['act']) && $_GET['act'] === 'template' && user()) {
     ], [24, 8, 11, 12, 70, 9], [1 => '"1,2,3,4,5,6"', 2 => '"1,2"']);
 }
 
-$mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?' . scope_user(), [$mapelId]) : null;
+$mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;
 if ($mapelId > 0 && $mapel === null) {
     $mapelId = 0;
 }
@@ -411,7 +406,7 @@ $legacyTps = ($mapelId > 0 && $isTahsin)
     : [];
 $editTp = null;
 if (!empty($_GET['edit'])) {
-    $editTp = one('SELECT * FROM tp WHERE id=?' . scope_user(), [(int) $_GET['edit']]);
+    $editTp = one('SELECT * FROM tp WHERE id=?', [(int) $_GET['edit']]);
 }
 
 $subtitle = 'TP tiap mapel per kelas & semester (Kurikulum Merdeka, deep learning); CP mengacu ketetapan Dinas Pendidikan per fase.';
@@ -540,6 +535,7 @@ if (is_admin() && $tpBawaanCount > 0): ?>
 
   <div class="card">
     <h3><?= $editTp ? 'Ubah TP' : 'Tambah TP' ?> - <?= $isTahsin ? 'Jilid ' . $jilidSel : 'Kelas ' . $kelasSel ?> - Semester <?= $semSel ?></h3>
+    <?php if (is_admin()): ?>
     <form method="post" action="index.php?page=tp">
       <?= csrf_field() ?>
       <input type="hidden" name="aksi" value="tp_simpan">
@@ -561,10 +557,13 @@ if (is_admin() && $tpBawaanCount > 0): ?>
         <?php if ($editTp): ?><a class="btn secondary" href="index.php?page=tp&mapel=<?= $mapelId ?>&kelas=<?= $kelasSel ?>&sem=<?= $semSel ?>&jilid=<?= $jilidSel ?>">Batal</a><?php endif; ?>
       </div>
     </form>
+    <?php else: ?>
+      <div class="hint">TP diinput dan dikelola oleh administrator (hasil unggahan admin). Tampilan hanya-baca untuk peran Anda.</div>
+    <?php endif; ?>
   </div>
 </div>
 
-<?php if ($isTahsin && $legacyTps): ?>
+<?php if ($isTahsin && $legacyTps && is_admin()): ?>
 <div class="alert alert-warning">
   Ada <b><?= count($legacyTps) ?> TP Tahsin lama berbasis kelas</b> (semester ini) yang tidak dipakai di Nilai Formatif karena TP Tahsin kini per Jilid.
   Kosongkan dengan satu kali klik, atau hapus satu per satu pada tabel di bawah.
@@ -583,7 +582,7 @@ if (is_admin() && $tpBawaanCount > 0): ?>
 <?php $tpsAll = array_merge($tps, array_map(fn($t) => $t + ['legacy' => 1], $legacyTps)); ?>
 <div class="table-wrap">
   <table class="tbl">
-    <thead><tr><th class="center" style="width:70px">Kode</th><th>Deskripsi Tujuan Pembelajaran</th><th class="center">Nilai Formatif</th><?php if (can_edit()): ?><th class="center">Aksi</th><?php endif; ?></tr></thead>
+    <thead><tr><th class="center" style="width:70px">Kode</th><th>Deskripsi Tujuan Pembelajaran</th><th class="center">Nilai Formatif</th><?php if (is_admin()): ?><th class="center">Aksi</th><?php endif; ?></tr></thead>
     <tbody>
     <?php if (!$tpsAll): ?>
       <tr><td colspan="4" class="empty"><?= $isTahsin
@@ -595,7 +594,7 @@ if (is_admin() && $tpBawaanCount > 0): ?>
         <td class="center"><span class="badge badge-blue"><?= e($t['kode']) ?></span></td>
         <td><?= e($t['deskripsi']) ?><?php if (!empty($t['legacy'])): ?> <span class="badge badge-gray">Lama - Kelas <?= (int) $t['kelas'] ?> (tidak dipakai)</span><?php endif; ?></td>
         <td class="center"><?= $isi ?> siswa</td>
-        <?php if (can_edit()): ?>
+        <?php if (is_admin()): ?>
         <td class="center">
           <a class="btn sm secondary" href="index.php?page=tp&mapel=<?= $mapelId ?>&kelas=<?= $kelasSel ?>&sem=<?= $semSel ?>&jilid=<?= $jilidSel ?>&edit=<?= (int) $t['id'] ?>">Ubah</a>
           <form method="post" action="index.php?page=tp" data-confirm="Hapus TP beserta nilai formatifnya?">
