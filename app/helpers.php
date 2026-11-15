@@ -342,19 +342,20 @@ function seq(string $ta, int $sem): int
     return ta_start($ta) * 2 + $sem;
 }
 
-function avg_formatif(int $siswa, int $mapel, string $ta, int $sem): ?float
+function avg_formatif(int $siswa, int $mapel, string $ta, int $sem, ?int $kelas = null): ?float
 {
-    $v = scalar('SELECT AVG(nilai) FROM nilai_formatif WHERE siswa_id=? AND mapel_id=? AND ta=? AND semester=?',
-        [$siswa, $mapel, $ta, $sem]);
+    $v = scalar('SELECT AVG(nilai) FROM nilai_formatif WHERE siswa_id=? AND mapel_id=? AND ta=? AND semester=? AND kelas=?',
+        [$siswa, $mapel, $ta, $sem, $kelas ?? (int) ctx()['kelas']]);
     return $v === null ? null : (float) $v;
 }
 
-function avg_sumatif(int $siswa, int $mapel, string $ta, int $sem): ?float
+function avg_sumatif(int $siswa, int $mapel, string $ta, int $sem, ?int $kelas = null): ?float
 {
+    $k = $kelas ?? (int) ctx()['kelas'];
     $ambil = fn(string $tipe) => scalar(
         'SELECT AVG(n.nilai) FROM nilai_sumatif n JOIN sumatif_jenis j ON j.id=n.jenis_id'
-        . ' WHERE n.siswa_id=? AND n.mapel_id=? AND n.ta=? AND n.semester=? AND j.tipe=?',
-        [$siswa, $mapel, $ta, $sem, $tipe]
+        . ' WHERE n.siswa_id=? AND n.mapel_id=? AND n.ta=? AND n.semester=? AND n.kelas=? AND j.tipe=?',
+        [$siswa, $mapel, $ta, $sem, $k, $tipe]
     );
     $l = $ambil('lingkup');
     $a = $ambil('aes');
@@ -395,10 +396,11 @@ function sumatif_aes_pastikan(int $mapel, int $kelas, string $ta, int $sem, int 
     }
 }
 
-function nilai_akhir(int $siswa, int $mapel, string $ta, int $sem): ?float
+function nilai_akhir(int $siswa, int $mapel, string $ta, int $sem, ?int $kelas = null): ?float
 {
-    $f = avg_formatif($siswa, $mapel, $ta, $sem);
-    $s = avg_sumatif($siswa, $mapel, $ta, $sem);
+    $k = $kelas ?? (int) ctx()['kelas'];
+    $f = avg_formatif($siswa, $mapel, $ta, $sem, $k);
+    $s = avg_sumatif($siswa, $mapel, $ta, $sem, $k);
     if ($f === null && $s === null) {
         return null;
     }
@@ -422,7 +424,7 @@ function predikat(?float $n): string
     return 'D';
 }
 
-function nilai_sebelumnya(int $siswa, int $mapel, string $ta, int $sem): ?float
+function nilai_sebelumnya(int $siswa, int $mapel, string $ta, int $sem, ?int $kelas = null): ?float
 {
     $cur = seq($ta, $sem);
     $kunci = [];
@@ -439,17 +441,17 @@ function nilai_sebelumnya(int $siswa, int $mapel, string $ta, int $sem): ?float
     }
     krsort($kunci);
     [$pta, $psem] = reset($kunci);
-    return nilai_akhir($siswa, $mapel, $pta, $psem);
+    return nilai_akhir($siswa, $mapel, $pta, $psem, $kelas);
 }
 
-function capaian_kompetensi(int $siswa, int $mapel, string $ta, int $sem, string $fase, string $nama = ''): array
+function capaian_kompetensi(int $siswa, int $mapel, string $ta, int $sem, string $fase, string $nama = '', ?int $kelas = null): array
 {
     $rows = all(
         'SELECT tp.id, tp.deskripsi, AVG(n.nilai) AS rata FROM nilai_formatif n
          JOIN tp ON tp.id = n.tp_id
-         WHERE n.siswa_id=? AND n.mapel_id=? AND n.ta=? AND n.semester=?'
+         WHERE n.siswa_id=? AND n.mapel_id=? AND n.ta=? AND n.semester=? AND n.kelas=?'
          . ' GROUP BY tp.id, tp.deskripsi ORDER BY rata ASC',
-        [$siswa, $mapel, $ta, $sem]
+        [$siswa, $mapel, $ta, $sem, $kelas ?? (int) ctx()['kelas']]
     );
     if (!$rows) {
         $cp = null;
