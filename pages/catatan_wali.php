@@ -16,8 +16,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($siswas as $s) {
             $sid = (int) $s['id'];
             $t = trim((string) ($input[$sid] ?? ''));
-            $ada = one('SELECT id FROM catatan_wali WHERE siswa_id=? AND ta=? AND semester=?',
-                [$sid, $c['ta'], $c['semester']]);
+            $ada = one('SELECT id FROM catatan_wali WHERE siswa_id=? AND ta=? AND semester=? AND kelas=?',
+                [$sid, $c['ta'], $c['semester'], $c['kelas']]);
             if ($t === '') {
                 if ($ada) {
                     run('DELETE FROM catatan_wali WHERE id=?', [$ada['id']]);
@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 update_row('catatan_wali', ['teks' => $t], 'id=?', [$ada['id']]);
             } else {
                 insert_row('catatan_wali', ['siswa_id' => $sid, 'ta' => $c['ta'],
-                    'semester' => $c['semester'], 'teks' => $t]);
+                    'semester' => $c['semester'], 'kelas' => $c['kelas'], 'teks' => $t]);
             }
             $tersimpan++;
         }
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $existing = [];
-foreach (all('SELECT siswa_id, teks FROM catatan_wali WHERE ta=? AND semester=?', [$c['ta'], $c['semester']]) as $r) {
+foreach (all('SELECT siswa_id, teks FROM catatan_wali WHERE ta=? AND semester=? AND kelas=?', [$c['ta'], $c['semester'], $c['kelas']]) as $r) {
     $existing[(int) $r['siswa_id']] = $r['teks'];
 }
 

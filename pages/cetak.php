@@ -56,7 +56,7 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
     $sid = (int) $s['id'];
     $romawi = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
     $angka = ['', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 'Enam', 'Tujuh'];
-    $capaianKok = one('SELECT predikat, deskripsi, desk_manual FROM kokurikuler_capaian WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']]) ?: [];
+    $capaianKok = one('SELECT predikat, deskripsi, desk_manual FROM kokurikuler_capaian WHERE siswa_id=? AND ta=? AND semester=? AND kelas=?', [$sid, $c['ta'], $c['semester'], $kelas]) ?: [];
     $arrPred = json_decode($capaianKok['predikat'] ?? '[]', true) ?: [];
     if ((int) ($capaianKok['desk_manual'] ?? 0) === 1) {
         $deskKok = trim((string) ($capaianKok['deskripsi'] ?? ''));
@@ -64,9 +64,9 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
         $deskKok = generate_deskripsi_kokurikuler($arrPred, $s['nama']);
     }
     $nilaiEkstra = all('SELECT e.id AS eid, e.nama, n.predikat, n.catatan FROM nilai_ekstra n JOIN ekstra e ON e.id=n.ekstra_id
-        WHERE n.siswa_id=? AND n.ta=? AND n.semester=? ORDER BY e.urutan, e.nama', [$sid, $c['ta'], $c['semester']]);
-    $hadir = one('SELECT * FROM kehadiran WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']]);
-    $catatanTeks = (one('SELECT teks FROM catatan_wali WHERE siswa_id=? AND ta=? AND semester=?', [$sid, $c['ta'], $c['semester']])['teks'] ?? '');
+        WHERE n.siswa_id=? AND n.ta=? AND n.semester=? AND n.kelas=? ORDER BY e.urutan, e.nama', [$sid, $c['ta'], $c['semester'], $kelas]);
+    $hadir = one('SELECT * FROM kehadiran WHERE siswa_id=? AND ta=? AND semester=? AND kelas=?', [$sid, $c['ta'], $c['semester'], $kelas]);
+    $catatanTeks = (one('SELECT teks FROM catatan_wali WHERE siswa_id=? AND ta=? AND semester=? AND kelas=?', [$sid, $c['ta'], $c['semester'], $kelas])['teks'] ?? '');
 
     $tuntas = $mapelList !== [];
     foreach ($mapelList as $m) {

@@ -347,11 +347,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             flash_set('success', 'Siswa baru ditambahkan.');
         }
         $teksCatatan = trim($_POST['catatan_wali'] ?? '');
-        $adaCat = one('SELECT id FROM catatan_wali WHERE siswa_id=? AND ta=? AND semester=?', [$id, $c['ta'], $c['semester']]);
+        $adaCat = one('SELECT id FROM catatan_wali WHERE siswa_id=? AND ta=? AND semester=? AND kelas=?',
+            [$id, $c['ta'], $c['semester'], $c['kelas']]);
         if ($adaCat) {
             update_row('catatan_wali', ['teks' => $teksCatatan], 'id=?', [$adaCat['id']]);
         } else {
-            insert_row('catatan_wali', ['siswa_id' => $id, 'ta' => $c['ta'], 'semester' => $c['semester'], 'teks' => $teksCatatan]);
+            insert_row('catatan_wali', ['siswa_id' => $id, 'ta' => $c['ta'], 'semester' => $c['semester'],
+                'kelas' => $c['kelas'], 'teks' => $teksCatatan]);
         }
         redirect('siswa');
     }
@@ -472,7 +474,8 @@ if (!empty($_GET['edit'])) {
 }
 $catatanWali = '';
 if ($edit) {
-    $cn = one('SELECT teks FROM catatan_wali WHERE siswa_id=? AND ta=? AND semester=?', [(int) $edit['id'], $c['ta'], $c['semester']]);
+    $cn = one('SELECT teks FROM catatan_wali WHERE siswa_id=? AND ta=? AND semester=? AND kelas=?',
+        [(int) $edit['id'], $c['ta'], $c['semester'], $c['kelas']]);
     $catatanWali = $cn['teks'] ?? '';
 }
 $totalSemua = (int) scalar('SELECT COUNT(*) FROM siswa');

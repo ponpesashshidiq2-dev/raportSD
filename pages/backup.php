@@ -62,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             db()->commit();
+            backfill_kelas_siswa(db());
             db()->exec('PRAGMA foreign_keys = ON');
             flash_set('success', "Restore berhasil: $inserted baris dari " . count($data['tables']) . " tabel.");
         } catch (Throwable $ex) {

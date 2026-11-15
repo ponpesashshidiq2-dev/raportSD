@@ -21,13 +21,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'izin' => max(0, (int) ($izin[$s['id']] ?? 0)),
                 'tka' => max(0, (int) ($tka[$s['id']] ?? 0)),
             ];
-            $ada = one('SELECT id FROM kehadiran WHERE siswa_id=? AND ta=? AND semester=?',
-                [$s['id'], $c['ta'], $c['semester']]);
+            $ada = one('SELECT id FROM kehadiran WHERE siswa_id=? AND ta=? AND semester=? AND kelas=?',
+                [$s['id'], $c['ta'], $c['semester'], $c['kelas']]);
             if ($ada) {
                 update_row('kehadiran', $data, 'id=?', [$ada['id']]);
             } else {
                 insert_row('kehadiran', $data + [
                     'siswa_id' => $s['id'], 'ta' => $c['ta'], 'semester' => $c['semester'],
+                    'kelas' => $c['kelas'],
                 ]);
             }
             $tersimpan++;
@@ -42,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $existing = [];
-foreach (all('SELECT * FROM kehadiran WHERE ta=? AND semester=?', [$c['ta'], $c['semester']]) as $r) {
+foreach (all('SELECT * FROM kehadiran WHERE ta=? AND semester=? AND kelas=?', [$c['ta'], $c['semester'], $c['kelas']]) as $r) {
     $existing[$r['siswa_id']] = $r;
 }
 

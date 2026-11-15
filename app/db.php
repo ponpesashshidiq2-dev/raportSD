@@ -144,9 +144,10 @@ CREATE TABLE nilai_ekstra (
   ekstra_id INTEGER NOT NULL,
   ta TEXT NOT NULL,
   semester INTEGER NOT NULL,
+  kelas INTEGER NOT NULL DEFAULT 0,
   predikat TEXT NOT NULL,
   catatan TEXT NOT NULL DEFAULT '',
-  UNIQUE (siswa_id, ekstra_id, ta, semester)
+  UNIQUE (siswa_id, ekstra_id, ta, semester, kelas)
 );
 CREATE TABLE ekstra_deskripsi (
   ekstra_id INTEGER NOT NULL,
@@ -161,18 +162,20 @@ CREATE TABLE kehadiran (
   siswa_id INTEGER NOT NULL,
   ta TEXT NOT NULL,
   semester INTEGER NOT NULL,
+  kelas INTEGER NOT NULL DEFAULT 0,
   sakit INTEGER NOT NULL DEFAULT 0,
   izin INTEGER NOT NULL DEFAULT 0,
   tka INTEGER NOT NULL DEFAULT 0,
-  UNIQUE (siswa_id, ta, semester)
+  UNIQUE (siswa_id, ta, semester, kelas)
 );
 CREATE TABLE catatan_wali (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   siswa_id INTEGER NOT NULL,
   ta TEXT NOT NULL,
   semester INTEGER NOT NULL,
+  kelas INTEGER NOT NULL DEFAULT 0,
   teks TEXT NOT NULL DEFAULT '',
-  UNIQUE (siswa_id, ta, semester)
+  UNIQUE (siswa_id, ta, semester, kelas)
 );
 CREATE TABLE siswa_jilid (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -195,18 +198,20 @@ CREATE TABLE kokurikuler_nilai (
   kegiatan_id INTEGER NOT NULL,
   ta TEXT NOT NULL,
   semester INTEGER NOT NULL,
+  kelas INTEGER NOT NULL DEFAULT 0,
   keterangan TEXT NOT NULL DEFAULT '',
-  UNIQUE (siswa_id, kegiatan_id, ta, semester)
+  UNIQUE (siswa_id, kegiatan_id, ta, semester, kelas)
 );
 CREATE TABLE kokurikuler_capaian (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   siswa_id INTEGER NOT NULL,
   ta TEXT NOT NULL,
   semester INTEGER NOT NULL,
+  kelas INTEGER NOT NULL DEFAULT 0,
   predikat TEXT NOT NULL DEFAULT '',
   deskripsi TEXT NOT NULL DEFAULT '',
   desk_manual INTEGER NOT NULL DEFAULT 0,
-  UNIQUE (siswa_id, ta, semester)
+  UNIQUE (siswa_id, ta, semester, kelas)
 );
 CREATE INDEX idx_nf_mapel ON nilai_formatif (mapel_id, ta, semester);
 CREATE INDEX idx_ns_mapel ON nilai_sumatif (mapel_id, ta, semester);
@@ -366,8 +371,9 @@ function migrate_catatan_wali(PDO $pdo): void
       siswa_id INTEGER NOT NULL,
       ta TEXT NOT NULL,
       semester INTEGER NOT NULL,
+      kelas INTEGER NOT NULL DEFAULT 0,
       teks TEXT NOT NULL DEFAULT '',
-      UNIQUE (siswa_id, ta, semester)
+      UNIQUE (siswa_id, ta, semester, kelas)
     )");
 }
 
@@ -398,18 +404,20 @@ function migrate_kokurikuler(PDO $pdo): void
       kegiatan_id INTEGER NOT NULL,
       ta TEXT NOT NULL,
       semester INTEGER NOT NULL,
+      kelas INTEGER NOT NULL DEFAULT 0,
       keterangan TEXT NOT NULL DEFAULT '',
-      UNIQUE (siswa_id, kegiatan_id, ta, semester)
+      UNIQUE (siswa_id, kegiatan_id, ta, semester, kelas)
     )");
     $pdo->exec("CREATE TABLE IF NOT EXISTS kokurikuler_capaian (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       siswa_id INTEGER NOT NULL,
       ta TEXT NOT NULL,
       semester INTEGER NOT NULL,
+      kelas INTEGER NOT NULL DEFAULT 0,
       predikat TEXT NOT NULL DEFAULT '',
       deskripsi TEXT NOT NULL DEFAULT '',
       desk_manual INTEGER NOT NULL DEFAULT 0,
-      UNIQUE (siswa_id, ta, semester)
+      UNIQUE (siswa_id, ta, semester, kelas)
     )");
     $pdo->exec("CREATE TABLE IF NOT EXISTS kokurikuler_dimensi_ket (
       idx INTEGER PRIMARY KEY,
@@ -476,6 +484,106 @@ function migrate_tp_kelas(PDO $pdo): void
             $updNf->execute([(int) $new, (int) $tpid]);
         }
     }
+}
+
+function backfill_kelas_siswa(PDO $pdo): void
+{
+    foreach (['kehadiran', 'catatan_wali', 'nilai_ekstra', 'kokurikuler_nilai', 'kokurikuler_capaian'] as $t) {
+        if (!table_exists($pdo, $t)) {
+            continue;
+        }
+        $cols = array_map(fn($c) => $c['name'], $pdo->query("PRAGMA table_info($t)")->fetchAll(PDO::FETCH_ASSOC));
+        if (!in_array('kelas', $cols, true)) {
+            continue;
+        }
+        $pdo->exec("UPDATE $t SET kelas = COALESCE((SELECT s.kelas FROM siswa s WHERE s.id = $t.siswa_id), 0) WHERE kelas = 0");
+    }
+}
+
+function migrate_kelas_tabel(PDO $pdo): void
+{
+    $tabel = [
+        'kehadiran' => "CREATE TABLE %s (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          siswa_id INTEGER NOT NULL,
+          ta TEXT NOT NULL,
+          semester INTEGER NOT NULL,
+          kelas INTEGER NOT NULL DEFAULT 0,
+          sakit INTEGER NOT NULL DEFAULT 0,
+          izin INTEGER NOT NULL DEFAULT 0,
+          tka INTEGER NOT NULL DEFAULT 0,
+          UNIQUE (siswa_id, ta, semester, kelas)
+        )",
+        'catatan_wali' => "CREATE TABLE %s (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          siswa_id INTEGER NOT NULL,
+          ta TEXT NOT NULL,
+          semester INTEGER NOT NULL,
+          kelas INTEGER NOT NULL DEFAULT 0,
+          teks TEXT NOT NULL DEFAULT '',
+          UNIQUE (siswa_id, ta, semester, kelas)
+        )",
+        'nilai_ekstra' => "CREATE TABLE %s (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          siswa_id INTEGER NOT NULL,
+          ekstra_id INTEGER NOT NULL,
+          ta TEXT NOT NULL,
+          semester INTEGER NOT NULL,
+          kelas INTEGER NOT NULL DEFAULT 0,
+          predikat TEXT NOT NULL,
+          catatan TEXT NOT NULL DEFAULT '',
+          UNIQUE (siswa_id, ekstra_id, ta, semester, kelas)
+        )",
+        'kokurikuler_nilai' => "CREATE TABLE %s (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          siswa_id INTEGER NOT NULL,
+          kegiatan_id INTEGER NOT NULL,
+          ta TEXT NOT NULL,
+          semester INTEGER NOT NULL,
+          kelas INTEGER NOT NULL DEFAULT 0,
+          keterangan TEXT NOT NULL DEFAULT '',
+          UNIQUE (siswa_id, kegiatan_id, ta, semester, kelas)
+        )",
+        'kokurikuler_capaian' => "CREATE TABLE %s (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          siswa_id INTEGER NOT NULL,
+          ta TEXT NOT NULL,
+          semester INTEGER NOT NULL,
+          kelas INTEGER NOT NULL DEFAULT 0,
+          predikat TEXT NOT NULL DEFAULT '',
+          deskripsi TEXT NOT NULL DEFAULT '',
+          desk_manual INTEGER NOT NULL DEFAULT 0,
+          UNIQUE (siswa_id, ta, semester, kelas)
+        )",
+    ];
+    foreach ($tabel as $t => $sqlBaru) {
+        if (!table_exists($pdo, $t)) {
+            $pdo->exec(sprintf($sqlBaru, $t));
+            continue;
+        }
+        $sqlLama = (string) $pdo->query("SELECT sql FROM sqlite_master WHERE type='table' AND name=" . $pdo->quote($t))->fetchColumn();
+        if (preg_match('/UNIQUE\s*\([^)]*\bkelas\b/i', $sqlLama)) {
+            continue;
+        }
+        $tmp = $t . '_mig_kelas';
+        $pdo->beginTransaction();
+        try {
+            $pdo->exec('DROP TABLE IF EXISTS ' . $tmp);
+            $pdo->exec(sprintf($sqlBaru, $tmp));
+            $kolomLama = array_map(fn($c) => $c['name'], $pdo->query("PRAGMA table_info($t)")->fetchAll(PDO::FETCH_ASSOC));
+            $kolomBaru = array_map(fn($c) => $c['name'], $pdo->query("PRAGMA table_info($tmp)")->fetchAll(PDO::FETCH_ASSOC));
+            $salin = array_values(array_intersect($kolomLama, $kolomBaru));
+            $kolomSql = implode(', ', $salin);
+            $pdo->exec("INSERT INTO $tmp ($kolomSql) SELECT $kolomSql FROM $t");
+            $pdo->exec('DROP TABLE ' . $t);
+            $pdo->exec('ALTER TABLE ' . $tmp . ' RENAME TO ' . $t);
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+    backfill_kelas_siswa($pdo);
 }
 
 function migrate_jilid(PDO $pdo): void

@@ -25,8 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($adaD) {
                     run("DELETE FROM ekstra_deskripsi WHERE $where", $par);
                 }
-                run("UPDATE nilai_ekstra SET catatan='' WHERE ekstra_id=? AND ta=? AND semester=?
-                    AND siswa_id IN (SELECT id FROM siswa WHERE kelas=?)", $par);
+                run("UPDATE nilai_ekstra SET catatan='' WHERE ekstra_id=? AND ta=? AND semester=? AND kelas=?", $par);
             } elseif ($adaD) {
                 update_row('ekstra_deskripsi', ['deskripsi' => $teks], $where, $par);
             } else {
@@ -38,15 +37,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             foreach ($siswas as $s) {
                 $key = $ek['id'] . '_' . $s['id'];
                 $p = trim((string) ($nilai[$key] ?? ''));
-                $ada = one('SELECT id FROM nilai_ekstra WHERE siswa_id=? AND ekstra_id=? AND ta=? AND semester=?',
-                    [$s['id'], $ek['id'], $c['ta'], $c['semester']]);
+                $ada = one('SELECT id FROM nilai_ekstra WHERE siswa_id=? AND ekstra_id=? AND ta=? AND semester=? AND kelas=?',
+                    [$s['id'], $ek['id'], $c['ta'], $c['semester'], $c['kelas']]);
                 if ($p === '') {
                     if ($ada) {
                         run('DELETE FROM nilai_ekstra WHERE id=?', [$ada['id']]);
                     }
                     continue;
                 }
-                $row = ['predikat' => $p];
+                $row = ['predikat' => $p, 'kelas' => $c['kelas']];
                 if ($ada) {
                     update_row('nilai_ekstra', $row, 'id=?', [$ada['id']]);
                 } else {
@@ -68,8 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $existing = [];
-foreach (all('SELECT ekstra_id, siswa_id, predikat FROM nilai_ekstra WHERE ta=? AND semester=?',
-    [$c['ta'], $c['semester']]) as $r) {
+foreach (all('SELECT ekstra_id, siswa_id, predikat FROM nilai_ekstra WHERE ta=? AND semester=? AND kelas=?',
+    [$c['ta'], $c['semester'], $c['kelas']]) as $r) {
     $existing[$r['ekstra_id'] . '_' . $r['siswa_id']] = $r['predikat'];
 }
 $ekDesk = [];
@@ -79,7 +78,7 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
 }
 $legacy = [];
 foreach (all("SELECT n.ekstra_id AS eid, MIN(NULLIF(n.catatan, '')) AS t FROM nilai_ekstra n
-    JOIN siswa s ON s.id = n.siswa_id WHERE n.ta=? AND n.semester=? AND s.kelas=? GROUP BY n.ekstra_id",
+    WHERE n.ta=? AND n.semester=? AND n.kelas=? GROUP BY n.ekstra_id",
     [$c['ta'], $c['semester'], $c['kelas']]) as $r) {
     if ($r['t'] !== null && $r['t'] !== '') {
         $legacy[(int) $r['eid']] = (string) $r['t'];

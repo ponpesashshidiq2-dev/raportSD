@@ -39,7 +39,8 @@ $edit = null;
 if (!empty($_GET['edit'])) {
     $edit = one('SELECT * FROM ekstra WHERE id=?', [(int) $_GET['edit']]);
 }
-$daftar = all('SELECT e.*, (SELECT COUNT(*) FROM nilai_ekstra n WHERE n.ekstra_id=e.id) AS jml FROM ekstra e ORDER BY e.urutan, e.nama');
+$daftar = all('SELECT e.*, (SELECT COUNT(*) FROM nilai_ekstra n WHERE n.ekstra_id=e.id AND n.kelas=?) AS jml FROM ekstra e ORDER BY e.urutan, e.nama',
+    [(int) ctx()['kelas']]);
 
 page_head('Ekstrakurikuler', 'Daftar kegiatan ekstrakurikuler. Nilai yang tidak diinput tidak akan tampil pada raport.',
     '<a class="btn blue" href="index.php?page=nilai_ekstra">Input Nilai Ekstrakurikuler</a>');

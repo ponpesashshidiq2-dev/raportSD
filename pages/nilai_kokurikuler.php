@@ -35,8 +35,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             $dPosted = trim((string) ($deskInput[$sid] ?? ''));
-            $adaC = one('SELECT id, deskripsi, desk_manual FROM kokurikuler_capaian WHERE siswa_id=? AND ta=? AND semester=?',
-                [$sid, $c['ta'], $c['semester']]);
+            $adaC = one('SELECT id, deskripsi, desk_manual FROM kokurikuler_capaian WHERE siswa_id=? AND ta=? AND semester=? AND kelas=?',
+                [$sid, $c['ta'], $c['semester'], $c['kelas']]);
             $dLama = $adaC ? trim((string) $adaC['deskripsi']) : '';
             $manualOld = $adaC && (int) $adaC['desk_manual'] === 1;
             if ($dPosted === '') {
@@ -54,7 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     run('DELETE FROM kokurikuler_capaian WHERE id=?', [$adaC['id']]);
                 }
             } else {
-                $row = ['predikat' => json_encode($arr), 'deskripsi' => $d, 'desk_manual' => $manual];
+                $row = ['predikat' => json_encode($arr), 'deskripsi' => $d, 'desk_manual' => $manual,
+                    'kelas' => $c['kelas']];
                 if ($adaC) {
                     update_row('kokurikuler_capaian', $row, 'id=?', [$adaC['id']]);
                 } else {
@@ -72,8 +73,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ? array_map(fn($s) => (int) $s['id'], $siswas)
                 : [(int) $gen];
             foreach ($targets as $tid) {
-                $row = one('SELECT id, predikat FROM kokurikuler_capaian WHERE siswa_id=? AND ta=? AND semester=?',
-                    [$tid, $c['ta'], $c['semester']]);
+                $row = one('SELECT id, predikat FROM kokurikuler_capaian WHERE siswa_id=? AND ta=? AND semester=? AND kelas=?',
+                    [$tid, $c['ta'], $c['semester'], $c['kelas']]);
                 if (!$row) {
                     continue;
                 }
@@ -106,8 +107,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $ketDimMap = dimensi_keterangan();
 $capMap = [];
-foreach (all('SELECT siswa_id, predikat, deskripsi FROM kokurikuler_capaian WHERE ta=? AND semester=?',
-    [$c['ta'], $c['semester']]) as $r) {
+foreach (all('SELECT siswa_id, predikat, deskripsi FROM kokurikuler_capaian WHERE ta=? AND semester=? AND kelas=?',
+    [$c['ta'], $c['semester'], $c['kelas']]) as $r) {
     $capMap[(int) $r['siswa_id']] = [
         'predikat' => json_decode($r['predikat'] ?: '[]', true) ?: [],
         'deskripsi' => $r['deskripsi'],
