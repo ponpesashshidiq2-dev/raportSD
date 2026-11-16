@@ -272,7 +272,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($aksi === 'angkatan' && user()) {
         $a = (int) ($_POST['angkatan'] ?? 0);
         if ($a !== 0 && ($a < 2000 || $a > 2100)) {
-            flash_set('error', 'Angkatan harus tahun 2000-2100. Kosongkan untuk menampilkan semua siswa.');
+            flash_set('error', 'Angkatan harus tahun 2000-2100. Kosongkan untuk menonaktifkan kenaikan kelas otomatis.');
             redirect('siswa');
         }
         run('UPDATE users SET angkatan=? WHERE id=?', [$a, (int) user()['id']]);
@@ -280,10 +280,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $taStart = $a + (int) profil()['kelas_aktif'] - 1;
             $kel = $taStart - $a + 1;
             flash_set('success', $kel >= 1 && $kel <= 6
-                ? "Angkatan $a tersimpan — daftar siswa Data Siswa & input nilai terkunci ke angkatan ini (siswa Kelas $kel); kelas konteks tetap bebas diganti."
-                : "Angkatan $a tersimpan — tidak ada siswa aktif angkatan ini pada tahun ajaran berjalan.");
+                ? "Angkatan $a tersimpan — kenaikan kelas otomatis aktif (saat ini siswa Kelas $kel); daftar Data Siswa tetap menampilkan semua siswa Anda."
+                : "Angkatan $a tersimpan — tidak ada siswa angkatan ini pada kelas 1-6 tahun ajaran berjalan.");
         } else {
-            flash_set('success', 'Angkatan dikosongkan — daftar siswa kembali mengikuti kelas konteks.');
+            flash_set('success', 'Angkatan dikosongkan — kenaikan kelas otomatis nonaktif; daftar tetap menampilkan semua siswa.');
         }
         redirect('siswa');
     }
@@ -453,7 +453,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $myAng = (int) (user()['angkatan'] ?? 0);
 $taStart = (int) substr($c['ta'], 0, 4);
 $kelasDefault = $myAng > 0 ? min(6, max(1, $taStart - $myAng + 1)) : (int) $c['kelas'];
-$cohortKelas = $myAng > 0 ? $taStart - $myAng + 1 : 0;
 
 if (isset($_GET['act']) && $_GET['act'] === 'template' && user()) {
     $h0 = ['No', 'Nama Siswa', 'NISN/NIS', '', 'Tempat, Tanggal Lahir', 'Jenis Kelamin', 'Kode Agama', 'Agama', 'Pendidikan Sebelumnya', 'Alamat Peserta Didik', 'Nama Orang Tua', '', 'Pekerjaan Orang Tua', '', 'Alamat Orang Tua', '', '', '', '', 'Wali Peserta Didik', '', '', 'Kelas'];
@@ -471,14 +470,6 @@ if (isset($_GET['act']) && $_GET['act'] === 'export' && user()) {
     $out = [$h0, $h1];
     $sqlExp = 'SELECT * FROM siswa WHERE 1=1' . scope_user();
     $argsExp = [];
-    if ($myAng > 0) {
-        if ($cohortKelas >= 1 && $cohortKelas <= 6) {
-            $sqlExp .= ' AND kelas=?';
-            $argsExp[] = $cohortKelas;
-        } else {
-            $sqlExp .= ' AND 0=1';
-        }
-    }
     $sqlExp .= ' ORDER BY kelas, nama';
     $no = 0;
     foreach (all($sqlExp, $argsExp) as $s) {
@@ -504,14 +495,7 @@ if ($q !== '') {
     $like = '%' . $q . '%';
     array_push($args, $like, $like, $like);
 }
-if ($myAng > 0) {
-    if ($cohortKelas >= 1 && $cohortKelas <= 6) {
-        $sql .= ' AND kelas=?';
-        $args[] = $cohortKelas;
-    } else {
-        $sql .= ' AND 0=1';
-    }
-} elseif ($filterKelas >= 1 && $filterKelas <= 6) {
+if ($filterKelas >= 1 && $filterKelas <= 6) {
     $sql .= ' AND kelas=?';
     $args[] = $filterKelas;
 }
@@ -529,7 +513,7 @@ if ($edit) {
 }
 $totalSemua = (int) scalar('SELECT COUNT(*) FROM siswa WHERE 1=1' . scope_user());
 
-page_head('Data Siswa', 'Kelola data peserta didik — daftar terkunci sesuai angkatan Anda.',
+page_head('Data Siswa', 'Kelola data peserta didik — seluruh siswa akun ini tampil berapa pun kelas konteks yang dibuka.',
     '<a class="btn secondary" href="index.php?page=siswa&act=template">Unduh Template</a>'
     . '<a class="btn secondary" href="index.php?page=siswa&act=export">Export Excel</a>'
     . '<a class="btn" href="#form-siswa">+ Tambah Siswa</a>');
@@ -538,17 +522,17 @@ page_head('Data Siswa', 'Kelola data peserta didik — daftar terkunci sesuai an
   <?= csrf_field() ?>
   <input type="hidden" name="aksi" value="angkatan">
   <h3>Angkatan Saya</h3>
-  <div class="hint mb">Isi tahun angkatan (mis. 2025). <b>Tahun Ajaran dihitung otomatis</b> dari tahun angkatan + Kelas Aktif konteks (mis. angkatan 2025 &amp; Kelas 3 → 2027/2028), sehingga tidak perlu mengisi Tahun Ajaran pada menu Profil. Daftar siswa mengikuti kelas yang dibuka, dan saat tahun ajaran naik seluruh siswa <b>otomatis dinaikkan satu tingkat kelas</b>.</div>
+  <div class="hint mb">Isi tahun angkatan (mis. 2025). <b>Tahun Ajaran dihitung otomatis</b> dari tahun angkatan + Kelas Aktif konteks (mis. angkatan 2025 &amp; Kelas 3 → 2027/2028), sehingga tidak perlu mengisi Tahun Ajaran pada menu Profil. Daftar selalu menampilkan <b>seluruh siswa Anda dari semua kelas</b>, dan saat tahun ajaran naik seluruh siswa <b>otomatis dinaikkan satu tingkat kelas</b>.</div>
   <div class="toolbar" style="margin:0">
     <label style="margin:0">Angkatan</label>
     <input type="number" name="angkatan" min="2000" max="2100" value="<?= $myAng > 0 ? $myAng : '' ?>" placeholder="cth. 2025" style="width:130px">
     <button class="btn" type="submit">Simpan Angkatan</button>
     <?php if ($myAng > 0): ?>
-      <span class="badge badge-blue">Menampilkan angkatan <?= $myAng ?><?= $cohortKelas >= 1 && $cohortKelas <= 6 ? ' &middot; saat ini Kelas ' . $cohortKelas : ' &middot; di luar kelas 1-6' ?></span>
+      <span class="badge badge-blue">Angkatan <?= $myAng ?> &middot; daftar semua siswa &middot; naik kelas otomatis</span>
     <?php else: ?>
-      <span class="badge badge-red">Belum diisi — seluruh kelas masih tampil</span>
+      <span class="badge badge-red">Angkatan belum diisi &middot; naik kelas otomatis nonaktif</span>
     <?php endif; ?>
-    <span class="hint">Kosongkan lalu simpan untuk menampilkan semua siswa (tidak disarankan).</span>
+    <span class="hint">Daftar Data Siswa selalu menampilkan seluruh siswa akun ini dari semua kelas &mdash; filter kelas dipilih di atas tabel.</span>
   </div>
 </form>
 <form class="card" id="form-siswa" method="post" action="index.php?page=siswa">
@@ -692,18 +676,14 @@ page_head('Data Siswa', 'Kelola data peserta didik — daftar terkunci sesuai an
 <form class="toolbar" method="get" action="index.php">
   <input type="hidden" name="page" value="siswa">
   <input class="search" type="text" name="q" value="<?= e($q) ?>" placeholder="Cari nama / NISN / NIS...">
-  <?php if ($myAng <= 0): ?>
   <select name="fk">
     <option value="0">Semua Kelas</option>
     <?php for ($k = 1; $k <= 6; $k++): ?>
       <option value="<?= $k ?>"<?= $filterKelas === $k ? ' selected' : '' ?>>Kelas <?= $k ?></option>
     <?php endfor; ?>
   </select>
-  <?php endif; ?>
   <button class="btn secondary" type="submit">Cari</button>
-  <?php if ($myAng > 0): ?>
-    <span class="hint">Daftar terkunci ke angkatan <?= $myAng ?> — siswa angkatan lain tidak tampil.</span>
-  <?php endif; ?>
+  <span class="hint">Filter kelas bersifat opsional — tanpa pilihan, seluruh siswa akun ini tampil.</span>
 </form>
 
 <div class="table-wrap">
