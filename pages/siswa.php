@@ -135,7 +135,7 @@ function import_tanggal($v): string
     return '';
 }
 
-function siswa_import_rows(array $rows, string $mode): array
+function siswa_import_rows(array $rows, string $mode, ?int $kelasPaksa = null): array
 {
     $stats = ['total' => 0, 'baru' => 0, 'ubah' => 0, 'lewati' => 0, 'pesan' => []];
     if (count($rows) < 2) {
@@ -166,7 +166,9 @@ function siswa_import_rows(array $rows, string $mode): array
                 $nisn = $get('nisn_nis');
             }
             $kelas = (int) $get('kelas');
-            if ($kelas < 1 || $kelas > 6) {
+            if ($kelasPaksa !== null) {
+                $kelas = $kelasPaksa;
+            } elseif ($kelas < 1 || $kelas > 6) {
                 $kelas = ctx()['kelas'];
             }
             $jk = strtoupper(substr($get('jk'), 0, 1));
@@ -381,29 +383,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($aksi === 'import') {
-        if (empty($_FILES['file']['tmp_name']) || $_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-            flash_set('error', 'File tidak terunggah. Pilih file Excel (.xlsx) atau CSV.');
-            redirect('siswa');
-        }
-        $tmp = $_FILES['file']['tmp_name'];
-        $ext = strtolower(pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, ['xlsx', 'csv', 'txt'], true)) {
-            flash_set('error', 'Format file harus .xlsx atau .csv.');
-            redirect('siswa');
-        }
-        try {
-            $rows = xlsx_read($tmp, $_FILES['file']['name']);
-            $stats = siswa_import_rows($rows, ($_POST['mode'] ?? 'update') === 'skip' ? 'skip' : 'update');
-            if ($stats['pesan']) {
-                flash_set('error', implode(' ', $stats['pesan']));
-            } else {
-                flash_set('success', sprintf(
-                    'Impor selesai: %d baris diproses, %d baru, %d diperbarui, %d dilewati.',
-                    $stats['total'], $stats['baru'], $stats['ubah'], $stats['lewati']
-                ));
+        $fileList = [];
+        if (!empty($_FILES['file']['name']) && is_array($_FILES['file']['name'])) {
+            $nFiles = count($_FILES['file']['name']);
+            for ($fi = 0; $fi < $nFiles; $fi++) {
+                if ($_FILES['file']['name'][$fi] === '') {
+                    continue;
+                }
+                $fileList[] = [
+                    'name' => $_FILES['file']['name'][$fi],
+                    'tmp' => $_FILES['file']['tmp_name'][$fi],
+                    'error' => (int) $_FILES['file']['error'][$fi],
+                ];
             }
-        } catch (Throwable $ex) {
-            flash_set('error', 'Gagal membaca file: ' . $ex->getMessage());
+        } elseif (!empty($_FILES['file']['name'])) {
+            $fileList[] = [
+                'name' => $_FILES['file']['name'],
+                'tmp' => $_FILES['file']['tmp_name'],
+                'error' => (int) $_FILES['file']['error'],
+            ];
+        }
+        if (!$fileList) {
+            flash_set('error', 'File tidak terunggah. Pilih file Excel (.xlsx) atau CSV (boleh lebih dari satu).');
+            redirect('siswa');
+        }
+        $kt = (string) ($_POST['kelas_tujuan'] ?? '');
+        $kelasPaksa = in_array($kt, ['1', '2', '3', '4', '5', '6'], true) ? (int) $kt : null;
+        $modeImp = ($_POST['mode'] ?? 'update') === 'skip' ? 'skip' : 'update';
+        $gabung = ['total' => 0, 'baru' => 0, 'ubah' => 0, 'lewati' => 0];
+        $gagal = [];
+        foreach ($fileList as $f) {
+            $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
+            if ($f['error'] !== UPLOAD_ERR_OK) {
+                $gagal[] = $f['name'] . ' gagal diunggah';
+                continue;
+            }
+            if (!in_array($ext, ['xlsx', 'csv', 'txt'], true)) {
+                $gagal[] = $f['name'] . ' bukan .xlsx/.csv';
+                continue;
+            }
+            try {
+                $rowsImp = xlsx_read($f['tmp'], $f['name']);
+                $st = siswa_import_rows($rowsImp, $modeImp, $kelasPaksa);
+                if ($st['pesan']) {
+                    $gagal[] = $f['name'] . ': ' . implode(' ', $st['pesan']);
+                }
+                foreach (['total', 'baru', 'ubah', 'lewati'] as $kImp) {
+                    $gabung[$kImp] += $st[$kImp];
+                }
+            } catch (Throwable $exImp) {
+                $gagal[] = $f['name'] . ': ' . $exImp->getMessage();
+            }
+        }
+        $ringkas = sprintf(
+            '%d file, %d baris diproses, %d baru, %d diperbarui, %d dilewati',
+            count($fileList), $gabung['total'], $gabung['baru'], $gabung['ubah'], $gabung['lewati']
+        );
+        if ($gagal) {
+            flash_set('error', 'Impor tidak seluruhnya berhasil (' . $ringkas . '). Masalah: ' . implode(' | ', $gagal));
+        } elseif ($gabung['total'] === 0) {
+            flash_set('error', 'Tidak ada baris data yang terbaca dari ' . count($fileList) . ' file.');
+        } else {
+            flash_set('success', 'Impor selesai: ' . $ringkas . '.');
         }
         redirect('siswa');
     }
@@ -415,18 +456,18 @@ $kelasDefault = $myAng > 0 ? min(6, max(1, $taStart - $myAng + 1)) : (int) $c['k
 $cohortKelas = $myAng > 0 ? $taStart - $myAng + 1 : 0;
 
 if (isset($_GET['act']) && $_GET['act'] === 'template' && user()) {
-    $h0 = ['No', 'Nama Siswa', 'NISN/NIS', '', 'Tempat, Tanggal Lahir', 'Jenis Kelamin', 'Kode Agama', 'Agama', 'Pendidikan Sebelumnya', 'Alamat Peserta Didik', 'Nama Orang Tua', '', 'Pekerjaan Orang Tua', '', 'Alamat Orang Tua', '', '', '', '', 'Wali Peserta Didik', '', ''];
-    $h1 = ['', '', 'NISN', 'NIS', '', '', '', '', '', '', 'Ayah', 'Ibu', 'Ayah', 'Ibu', 'Jalan / Kampung / RT / RW', 'Kelurahan', 'Kecamatan', 'Kota/Kabupaten', 'Provinsi', 'Nama', 'Pekerjaan', 'Alamat'];
-    $d1 = [1, 'Ahmad Fauzi', '0091234567', '2025001', 'Yogyakarta, 12/08/2017', 'L', '01', 'Islam', 'TK', 'Jl. Melati No. 3 RT 02/RW 05', 'Budi Santoso', 'Siti Aminah', 'Wiraswasta', 'Ibu Rumah Tangga', 'Jl. Melati No. 3', 'Muja Muju', 'Umbulharjo', 'Yogyakarta', 'DI Yogyakarta', '', '', ''];
-    $d2 = [2, 'Siti Aminah', '0091234568', '2025002', 'Sleman, 03/09/2017', 'P', '01', 'Islam', 'RA', 'Jl. Kenanga No. 8', 'Herman', 'Aminah', 'Petani', 'Guru', 'Jl. Kenanga No. 8', 'Condongcatur', 'Depok', 'Sleman', 'DI Yogyakarta', 'Kasek Sekolah', 'Guru', 'Jl. Sekolah No. 1'];
+    $h0 = ['No', 'Nama Siswa', 'NISN/NIS', '', 'Tempat, Tanggal Lahir', 'Jenis Kelamin', 'Kode Agama', 'Agama', 'Pendidikan Sebelumnya', 'Alamat Peserta Didik', 'Nama Orang Tua', '', 'Pekerjaan Orang Tua', '', 'Alamat Orang Tua', '', '', '', '', 'Wali Peserta Didik', '', '', 'Kelas'];
+    $h1 = ['', '', 'NISN', 'NIS', '', '', '', '', '', '', 'Ayah', 'Ibu', 'Ayah', 'Ibu', 'Jalan / Kampung / RT / RW', 'Kelurahan', 'Kecamatan', 'Kota/Kabupaten', 'Provinsi', 'Nama', 'Pekerjaan', 'Alamat', ''];
+    $d1 = [1, 'Ahmad Fauzi', '0091234567', '2025001', 'Yogyakarta, 12/08/2017', 'L', '01', 'Islam', 'TK', 'Jl. Melati No. 3 RT 02/RW 05', 'Budi Santoso', 'Siti Aminah', 'Wiraswasta', 'Ibu Rumah Tangga', 'Jl. Melati No. 3', 'Muja Muju', 'Umbulharjo', 'Yogyakarta', 'DI Yogyakarta', '', '', '', $kelasDefault];
+    $d2 = [2, 'Siti Aminah', '0091234568', '2025002', 'Sleman, 03/09/2017', 'P', '01', 'Islam', 'RA', 'Jl. Kenangan No. 8', 'Herman', 'Aminah', 'Petani', 'Guru', 'Jl. Kenangan No. 8', 'Condongcatur', 'Depok', 'Sleman', 'DI Yogyakarta', 'Kasek Sekolah', 'Guru', 'Jl. Sekolah No. 1', $kelasDefault];
     xlsx_download('template-data-siswa.xlsx', [$h0, $h1, $d1, $d2],
-        [5, 26, 16, 12, 24, 14, 11, 18, 20, 34, 22, 22, 20, 20, 30, 18, 18, 18, 18, 22, 20, 30],
+        [5, 26, 16, 12, 24, 14, 11, 18, 20, 34, 22, 22, 20, 20, 30, 18, 18, 18, 18, 22, 20, 30, 10],
         [5 => 'L,P', 6 => '01,02,03,04,05,06,07,08']);
 }
 
 if (isset($_GET['act']) && $_GET['act'] === 'export' && user()) {
-    $h0 = ['No', 'Nama Siswa', 'NISN/NIS', '', 'Tempat, Tanggal Lahir', 'Jenis Kelamin', 'Kode Agama', 'Agama', 'Pendidikan Sebelumnya', 'Alamat Peserta Didik', 'Nama Orang Tua', '', 'Pekerjaan Orang Tua', '', 'Alamat Orang Tua', '', '', '', '', 'Wali Peserta Didik', '', ''];
-    $h1 = ['', '', 'NISN', 'NIS', '', '', '', '', '', '', 'Ayah', 'Ibu', 'Ayah', 'Ibu', 'Jalan / Kampung / RT / RW', 'Kelurahan', 'Kecamatan', 'Kota/Kabupaten', 'Provinsi', 'Nama', 'Pekerjaan', 'Alamat'];
+    $h0 = ['No', 'Nama Siswa', 'NISN/NIS', '', 'Tempat, Tanggal Lahir', 'Jenis Kelamin', 'Kode Agama', 'Agama', 'Pendidikan Sebelumnya', 'Alamat Peserta Didik', 'Nama Orang Tua', '', 'Pekerjaan Orang Tua', '', 'Alamat Orang Tua', '', '', '', '', 'Wali Peserta Didik', '', '', 'Kelas'];
+    $h1 = ['', '', 'NISN', 'NIS', '', '', '', '', '', '', 'Ayah', 'Ibu', 'Ayah', 'Ibu', 'Jalan / Kampung / RT / RW', 'Kelurahan', 'Kecamatan', 'Kota/Kabupaten', 'Provinsi', 'Nama', 'Pekerjaan', 'Alamat', ''];
     $out = [$h0, $h1];
     $sqlExp = 'SELECT * FROM siswa WHERE 1=1' . scope_user();
     $argsExp = [];
@@ -448,10 +489,10 @@ if (isset($_GET['act']) && $_GET['act'] === 'export' && user()) {
             $s['jk'], $s['kode_agama'], $s['agama'], $s['pendidikan_sebelumnya'], $s['alamat'],
             $s['ayah'], $s['ibu'], $s['kerja_ayah'], $s['kerja_ibu'],
             $s['ortu_jalan'], $s['ortu_kelurahan'], $s['ortu_kecamatan'], $s['ortu_kota'], $s['ortu_provinsi'],
-            $s['wali_nama'], $s['wali_kerja'], $s['wali_alamat'],
+            $s['wali_nama'], $s['wali_kerja'], $s['wali_alamat'], $s['kelas'],
         ];
     }
-    xlsx_download('data-siswa.xlsx', $out, [5, 26, 16, 12, 24, 14, 11, 18, 20, 34, 22, 22, 20, 20, 30, 18, 18, 18, 18, 22, 20, 30]);
+    xlsx_download('data-siswa.xlsx', $out, [5, 26, 16, 12, 24, 14, 11, 18, 20, 34, 22, 22, 20, 20, 30, 18, 18, 18, 18, 22, 20, 30, 10]);
 }
 
 $q = trim($_GET['q'] ?? '');
@@ -612,7 +653,16 @@ page_head('Data Siswa', 'Kelola data peserta didik — daftar terkunci sesuai an
     <h3>Import Excel / CSV</h3>
     <div class="hint mb">Kolom wajib: <b>Nama Siswa</b>. Format mengikuti template (header 2 baris): NISN/NIS, Tempat+Tanggal Lahir, Jenis Kelamin, Kode Agama, Agama, Pendidikan Sebelumnya, Alamat Peserta Didik, Nama &amp; Pekerjaan Orang Tua (Ayah/Ibu), Alamat Orang Tua (Jalan/Kampung/RT/RW, Kelurahan, Kecamatan, Kota/Kabupaten, Provinsi), serta Wali Peserta Didik. Data dikenali melalui NISN, NIS, atau nama+kelas.</div>
     <div class="form-row">
-      <div class="field"><label>File (.xlsx / .csv)</label><input type="file" name="file" accept=".xlsx,.csv,.txt" required></div>
+      <div class="field"><label>File (.xlsx / .csv) &mdash; boleh pilih lebih dari satu</label><input type="file" name="file[]" accept=".xlsx,.csv,.txt" multiple required></div>
+      <div class="field">
+        <label>Kelas tujuan (untuk file tanpa kolom Kelas)</label>
+        <select name="kelas_tujuan">
+          <option value="">Otomatis &mdash; ikuti kolom Kelas file, lalu kelas konteks</option>
+          <?php for ($kt = 1; $kt <= 6; $kt++): ?>
+            <option value="<?= $kt ?>">Langsung ke Kelas <?= $kt ?></option>
+          <?php endfor; ?>
+        </select>
+      </div>
       <div class="field">
         <label>Jika data sudah ada</label>
         <select name="mode">
