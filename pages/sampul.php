@@ -3,9 +3,8 @@ $c = ctx();
 $p = profil();
 $kelas = $c['kelas'];
 $kaKunci = kelas_angkatan();
-$kelasSiswa = $kaKunci ?? $kelas;
 
-$semuaSiswa = all("SELECT * FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
+$semuaSiswa = all("SELECT * FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
 $terpilih = [];
 $pilihanBasi = false;
 if (isset($_GET['s'])) {
@@ -32,7 +31,6 @@ $tglAman = function ($v): string {
 
 page_head('Cetak Sampul Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] . ' - Semester ' . $c['semester'] . ' - TA ' . $c['ta'],
     '<button class="btn" id="printBtn" type="button">Cetak / Simpan PDF</button>');
-echo angkatan_lock_alert();
 if ($pilihanBasi): ?>
   <div class="alert alert-info">Pilihan siswa sebelumnya tidak berlaku pada kelas ini — menampilkan seluruh siswa kelas <?= (int) $kelas ?>.</div>
 <?php endif; ?>
@@ -50,7 +48,7 @@ if ($pilihanBasi): ?>
       <?php foreach ($semuaSiswa as $s):
           $checked = in_array((int) $s['id'], array_map(fn($x) => (int) $x['id'], $terpilih), true) || !isset($_GET['s']); ?>
         <label class="check" style="background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:4px 9px">
-          <input type="checkbox" name="s[]" value="<?= (int) $s['id'] ?>"<?= $checked ? ' checked' : '' ?>> <?= e($s['nama']) ?>
+          <input type="checkbox" name="s[]" value="<?= (int) $s['id'] ?>"<?= $checked ? ' checked' : '' ?>> <?= e($s['nama']) ?> <span class="hint">K<?= (int) $s['kelas'] ?></span>
         </label>
       <?php endforeach; ?>
     </div>

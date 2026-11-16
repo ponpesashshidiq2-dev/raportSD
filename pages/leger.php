@@ -1,8 +1,7 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-$kelasSiswa = $kaKunci ?? (int) $c['kelas'];
-$siswas = all("SELECT id, nama, nis FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
+$siswas = all("SELECT id, nama, nis, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
 $mapelList = mapel_kelas($c['kelas']);
 
 $nilaiMap = [];
@@ -77,7 +76,6 @@ $fmt = static function ($n, int $d = 1): string {
 
 page_head('Leger Nilai', 'Rekap nilai akhir seluruh mata pelajaran per siswa beserta rata-rata dan ranking pada konteks aktif.');
 echo context_bar();
-echo angkatan_lock_alert();
 ?>
 <?php if (!$siswas): ?>
   <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $c['kelas']) ?></div>
@@ -102,7 +100,7 @@ echo angkatan_lock_alert();
       <?php $no = 0; foreach ($siswas as $s): $no++; $sid = (int) $s['id']; ?>
       <tr>
         <td class="center" data-frozen="no"><?= $no ?></td>
-        <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint"><?= e($s['nis']) ?></div></td>
+        <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint">Kelas <?= (int) $s['kelas'] ?> &middot; <?= e($s['nis']) ?></div></td>
         <?php foreach ($mapelList as $m): $mid = (int) $m['id']; $na = $nilaiMap[$sid][$mid] ?? null; $kkm = $kkmMap[$mid]; ?>
         <td class="center<?= $na !== null && $kkm !== null && $na < $kkm ? ' nilai-red' : '' ?>"><?= $na !== null ? $fmt($na) : '-' ?></td>
         <?php endforeach; ?>
