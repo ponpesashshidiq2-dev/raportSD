@@ -175,7 +175,7 @@ table.rp-tbl td.capai{font-size:12.5px}
 .rp-ttd .who-ttd{width:190px;max-width:70%;margin-left:auto;margin-right:auto;border-bottom:2px dotted #475569}
 .rp-ttd .nip{font-size:12px;min-height:16px}
 .rp-ttd .role{min-height:20px}
-.rp-place{text-align:right;font-size:13.5px;margin-top:18px}
+.rp-place{text-align:center;font-size:13.5px;margin:0 0 4px}
 @media print{
   .sidebar,.topbar,.footer,.raport-tools,.page-head,.ctx-bar,.no-print,.alert,.save-bar{display:none!important}
   .content{padding:0}

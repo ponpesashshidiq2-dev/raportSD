@@ -205,7 +205,6 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
   </div>
   <?php endif; ?>
 
-  <div class="rp-place"><?= e($p['kota'] ?: '........................') ?>, <?= e(tanggal_rapor_ctx($kelas, (int) $c['semester']) !== '' ? tgl_indo(tanggal_rapor_ctx($kelas, (int) $c['semester'])) : tgl_indo()) ?></div>
   <div class="rp-ttd">
     <div class="pos">
       <div class="role">Orang Tua / Wali</div>
@@ -214,6 +213,7 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
       <div class="nip">&nbsp;</div>
     </div>
     <div class="pos">
+      <div class="rp-place"><?= e($p['kota'] ?: '........................') ?>, <?= e(tanggal_rapor_ctx($kelas, (int) $c['semester']) !== '' ? tgl_indo(tanggal_rapor_ctx($kelas, (int) $c['semester'])) : tgl_indo()) ?></div>
       <div class="role">Wali Kelas</div>
       <div class="who"><span class="nm"><?= e($walikelas['nama'] ?: '..........................') ?></span></div>
       <div class="nip">NBM. <?= e($walikelas['nip'] ?: '..........................') ?></div>
