@@ -1,8 +1,7 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-$kelasSiswa = $kaKunci ?? (int) $c['kelas'];
-$siswas = all("SELECT id, nama FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
+$siswas = all("SELECT id, nama, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
 $dimensi = dimensi_kokurikuler();
 $ops = predikat_kokurikuler_ops();
 
@@ -125,7 +124,6 @@ foreach (all('SELECT siswa_id, predikat, deskripsi FROM kokurikuler_capaian WHER
 page_head('Input Nilai Kokurikuler',
     'Keterangan per dimensi, capaian 8 Dimensi Profil Lulusan (Berkembang/Cakap/Mahir), dan deskripsi kokurikuler yang tercetak pada raport.');
 echo context_bar();
-echo angkatan_lock_alert();
 if (!$siswas): ?>
   <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $c['kelas']) ?></div>
 <?php else: ?>
@@ -174,7 +172,7 @@ if (!$siswas): ?>
             $cap = $capMap[$sid] ?? ['predikat' => [], 'deskripsi' => '']; ?>
           <tr>
             <td class="center" data-frozen="no"><?= $no ?></td>
-            <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?></td>
+            <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint">Kelas <?= (int) $s['kelas'] ?></div></td>
             <?php foreach (array_keys($dimensi) as $i => $label): ?>
               <td class="center">
                 <select name="predikat[<?= $sid ?>][<?= $i ?>]" style="min-width:110px">

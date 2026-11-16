@@ -1,8 +1,7 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-$kelasSiswa = $kaKunci ?? (int) $c['kelas'];
-$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
+$siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!can_edit()) {
@@ -49,7 +48,6 @@ foreach (all('SELECT * FROM kehadiran WHERE ta=? AND semester=? AND kelas=?', [$
 
 page_head('Kehadiran Siswa', 'Rekap ketidakhadiran semester berjalan: Sakit, Izin, dan Tanpa Keterangan.');
 echo context_bar();
-echo angkatan_lock_alert();
 ?>
 <?php if (!$siswas): ?>
   <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $c['kelas']) ?></div>
@@ -81,7 +79,7 @@ echo angkatan_lock_alert();
           $tk = (int) ($k['tka'] ?? 0); ?>
         <tr>
           <td class="center" data-frozen="no"><?= $no ?></td>
-          <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint">NISN <?= e($s['nisn']) ?></div></td>
+          <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint">Kelas <?= (int) $s['kelas'] ?> &middot; NISN <?= e($s['nisn']) ?></div></td>
           <td class="center"><input type="number" name="sakit[<?= (int) $s['id'] ?>]" min="0" max="180" value="<?= $sa ?>"></td>
           <td class="center"><input type="number" name="izin[<?= (int) $s['id'] ?>]" min="0" max="180" value="<?= $iz ?>"></td>
           <td class="center"><input type="number" name="tka[<?= (int) $s['id'] ?>]" min="0" max="180" value="<?= $tk ?>" <?= $tk > 0 ? 'class="nilai-red"' : '' ?>></td>

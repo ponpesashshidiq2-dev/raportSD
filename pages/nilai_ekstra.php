@@ -1,8 +1,7 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-$kelasSiswa = $kaKunci ?? (int) $c['kelas'];
-$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
+$siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
 $ekstraList = all('SELECT * FROM ekstra WHERE 1=1' . scope_user() . ' ORDER BY urutan, nama');
 $predikatOps = ['' => '-', 'A' => 'A (Sangat Baik)', 'B' => 'B (Baik)', 'C' => 'C (Cukup)', 'D' => 'D (Kurang)'];
 
@@ -56,7 +55,6 @@ foreach (all('SELECT ekstra_id, siswa_id, predikat FROM nilai_ekstra WHERE ta=? 
 
 page_head('Input Nilai Ekstrakurikuler', 'Siswa hanya menampilkan kegiatan yang nilainya diisi pada raport.');
 echo context_bar();
-echo angkatan_lock_alert();
 if (!$ekstraList): ?>
   <div class="alert alert-warning">Belum ada kegiatan. Tambahkan pada menu <a href="index.php?page=ekstra">Ekstrakurikuler</a>.</div>
 <?php elseif (!$siswas): ?>
@@ -84,7 +82,7 @@ if (!$ekstraList): ?>
       <?php $no = 0; foreach ($siswas as $s): $no++; ?>
         <tr>
           <td class="center" data-frozen="no"><?= $no ?></td>
-          <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?></td>
+          <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint">Kelas <?= (int) $s['kelas'] ?> &middot; NISN <?= e($s['nisn']) ?></div></td>
           <?php foreach ($ekstraList as $ek):
               $k = $ek['id'] . '_' . $s['id']; ?>
             <td class="center" style="min-width:120px">

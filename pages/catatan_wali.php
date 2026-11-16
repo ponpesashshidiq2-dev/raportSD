@@ -1,8 +1,7 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-$kelasSiswa = $kaKunci ?? (int) $c['kelas'];
-$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
+$siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!can_edit()) {
@@ -49,7 +48,6 @@ foreach (all('SELECT siswa_id, teks FROM catatan_wali WHERE ta=? AND semester=? 
 page_head('Catatan Wali Kelas',
     'Catatan perkembangan per siswa semester ini — tampil pada kotak "Catatan Wali Kelas" di raport cetak dan menjadi dasar penilaian Perkembangan pada KEPUTUSAN semester 2.');
 echo context_bar();
-echo angkatan_lock_alert();
 if (!$siswas): ?>
   <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $c['kelas']) ?></div>
 <?php else: ?>
@@ -73,7 +71,7 @@ if (!$siswas): ?>
       <?php $no = 0; foreach ($siswas as $s): $no++; $sid = (int) $s['id']; ?>
         <tr>
           <td class="center"><?= $no ?></td>
-          <td class="name-cell"><?= e($s['nama']) ?><div class="hint">NISN <?= e($s['nisn']) ?></div></td>
+          <td class="name-cell"><?= e($s['nama']) ?><div class="hint">Kelas <?= (int) $s['kelas'] ?> &middot; NISN <?= e($s['nisn']) ?></div></td>
           <td><textarea name="catatan[<?= $sid ?>]" rows="2" style="width:100%"
             placeholder="mis. Ananda menunjukkan perkembangan akademik yang baik dan aktif membantu teman."><?= e($existing[$sid] ?? '') ?></textarea></td>
         </tr>

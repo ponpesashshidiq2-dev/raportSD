@@ -1,7 +1,6 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-$kelasSiswa = $kaKunci ?? (int) $c['kelas'];
 $mapelList = mapel_kelas($c['kelas']);
 $mapelId = (int) ($_GET['mapel'] ?? 0);
 $mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;
@@ -21,7 +20,7 @@ if ($tpSel && !array_filter($allTps, fn($t) => (int) $t['id'] === $tpSel)) {
     $tpSel = 0;
 }
 $tps = $tpSel ? array_values(array_filter($allTps, fn($t) => (int) $t['id'] === $tpSel)) : $allTps;
-$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
+$siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!can_edit()) {
@@ -37,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash_set('error', 'Mata pelajaran tidak valid.');
         redirect('nilai_formatif');
     }
-    $siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
+    $siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
     $tpList = array_column(all('SELECT * FROM tp WHERE mapel_id=? AND kelas=? AND jilid=? AND semester=?',
         [$mapelId, $isTahsin ? 0 : $c['kelas'], $isTahsin ? $jilidFilter : 0, $c['semester']]), null, 'id');
     $siswaList = array_column($siswas, null, 'id');
@@ -115,7 +114,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 page_head('Input Nilai Formatif', 'Nilai setiap Tujuan Pembelajaran (TP) per siswa pada konteks aktif.', mode_switch());
 echo context_bar();
-echo angkatan_lock_alert();
 ?>
 <form class="toolbar" method="get" action="index.php">
   <input type="hidden" name="page" value="nilai_formatif">
@@ -212,7 +210,7 @@ echo angkatan_lock_alert();
             $sum = 0; $cnt = 0; ?>
           <tr>
             <td class="center" data-frozen="no" data-row-head="<?= $no - 1 ?>"><?= $no ?></td>
-            <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint">NISN <?= e($s['nisn']) ?></div></td>
+            <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint">Kelas <?= (int) $s['kelas'] ?> &middot; NISN <?= e($s['nisn']) ?></div></td>
             <?php if ($isTahsin): $jNow = $jilidMap[(int) $s['id']] ?? 1; ?>
               <td class="center">
                 <select name="jilid[<?= (int) $s['id'] ?>]">

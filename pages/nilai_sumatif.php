@@ -1,7 +1,6 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-$kelasSiswa = $kaKunci ?? (int) $c['kelas'];
 $mapelList = mapel_kelas($c['kelas']);
 $mapelId = (int) ($_GET['mapel'] ?? 0);
 $mapel = $mapelId > 0 ? one('SELECT * FROM mapel WHERE id=?', [$mapelId]) : null;
@@ -12,7 +11,7 @@ if (!$mapel && $mapelList) {
     $mapelId = 0;
 }
 $uidDomain = (int) (user()['id'] ?? 0);
-$siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
+$siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!can_edit()) {
@@ -26,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash_set('error', 'Mata pelajaran tidak valid.');
         redirect('nilai_sumatif');
     }
-    $siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$kelasSiswa]);
+    $siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
 
     if ($aksi === 'jumlah_terapkan') {
         $jumlah = (int) ($_POST['jumlah'] ?? -1);
@@ -136,7 +135,6 @@ $aesList = array_values(array_filter($jenisList, fn($j) => $j['tipe'] === 'aes')
 
 page_head('Input Nilai Sumatif', 'Atur jumlah kolom Lingkup Materi lalu isi nilainya; Asesmen Akhir Semester (Non-Tes & Tes) tersedia otomatis.', mode_switch());
 echo context_bar();
-echo angkatan_lock_alert();
 ?>
 <form class="toolbar" method="get" action="index.php">
   <input type="hidden" name="page" value="nilai_sumatif">
@@ -210,7 +208,7 @@ echo angkatan_lock_alert();
             $sl = 0; $cl = 0; $sa = 0; $ca = 0; ?>
           <tr>
             <td class="center" data-frozen="no" data-row-head="<?= $no - 1 ?>"><?= $no ?></td>
-            <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint">NISN <?= e($s['nisn']) ?></div></td>
+            <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint">Kelas <?= (int) $s['kelas'] ?> &middot; NISN <?= e($s['nisn']) ?></div></td>
             <?php $ci = -1; foreach ($jenisList as $j): $ci++;
                 $k = $j['id'] . '_' . $s['id'];
                 $v = $existing[$k] ?? null;
