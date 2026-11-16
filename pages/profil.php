@@ -165,7 +165,7 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
           <label>Kelas Aktif</label>
           <select name="kelas_aktif" onchange="var f=this.value<=2?'A':(this.value<=4?'B':'C');var s=this.form.querySelector('select[name=fase]');if(s)s.value=f;">
             <?php for ($k = 1; $k <= 6; $k++): ?>
-              <option value="<?= $k ?>"<?= (int) $p['kelas_aktif'] === $k ? ' selected' : '' ?>>Kelas <?= $k ?></option>
+              <option value="<?= $k ?>"<?= (int) $p['kelas_aktif'] === $k ? ' selected' : '' ?>><?= e(kelas_label($k)) ?></option>
             <?php endfor; ?>
           </select>
         </div>
@@ -243,13 +243,13 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
         <h4 style="margin:14px 0 6px">Semester <?= $s ?> <?= $s === (int) $p['semester'] ? '<span class="badge badge-blue">konteks aktif</span>' : '' ?></h4>
         <div class="table-wrap">
           <table class="tbl">
-            <thead><tr><th style="width:90px">Kelas</th><th>Nama Wali Kelas</th><th>NBM</th></tr></thead>
+            <thead><tr><th style="width:225px">Kelas</th><th>Nama Wali Kelas</th><th>NBM</th></tr></thead>
             <tbody>
             <?php for ($k = 1; $k <= 6; $k++):
                 $w = walikelas($k, $s);
                 $aktifK = $k === (int) $p['kelas_aktif'] && $s === (int) $p['semester']; ?>
               <tr<?= $aktifK ? ' style="background:var(--brand-soft)"' : '' ?>>
-                <td class="center"><b><?= $k ?></b><?= $aktifK ? '<div class="hint">aktif</div>' : '' ?></td>
+                <td class="center"><b><?= e(kelas_label($k)) ?></b><?= $aktifK ? '<div class="hint">aktif</div>' : '' ?></td>
                 <td><input type="text" name="wk_nama_<?= $k ?>_<?= $s ?>" value="<?= e($w['nama']) ?>"<?= $disabledEdit ?>></td>
                 <td><input type="text" name="wk_nip_<?= $k ?>_<?= $s ?>" value="<?= e($w['nip']) ?>"<?= $disabledEdit ?>></td>
               </tr>
@@ -265,7 +265,7 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
     <h3>Naik Kelas</h3>
     <p class="hint">Kenaikan kelas berjalan <b>otomatis saat tahun ajaran naik</b> — seluruh siswa aktif otomatis dinaikkan satu tingkat kelas (kelas 6 tidak berubah), tanpa perlu tombol. Riwayat nilai semester sebelumnya tetap tersimpan dan dipakai sebagai pembanding kenaikan nilai di menu Mata Pelajaran.</p>
     <div class="alert alert-warning mt">
-      <b>Konteks saat ini:</b> Kelas <?= $c['kelas'] ?>, <?= e(fase_label($c['fase'])) ?>, Semester <?= $c['semester'] ?>, Tahun Ajaran <?= e($c['ta']) ?>.
+      <b>Konteks saat ini:</b> <?= e(kelas_label((int) $c['kelas'])) ?>, <?= e(fase_label($c['fase'])) ?>, Semester <?= $c['semester'] ?>, Tahun Ajaran <?= e($c['ta']) ?>.
     </div>
   </div>
 </div>

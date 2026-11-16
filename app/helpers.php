@@ -415,6 +415,25 @@ function fase_label(string $f): string
     return ['A' => 'Fase A (Kelas 1-2)', 'B' => 'Fase B (Kelas 3-4)', 'C' => 'Fase C (Kelas 5-6)'][$f] ?? 'Fase ' . $f;
 }
 
+function kelas_sahabat(int $k): string
+{
+    static $daftar = [
+        1 => 'Abu Bakar Ash-Shiddiq',
+        2 => 'Umar Bin Khattab',
+        3 => 'Ustman Bin Affan',
+        4 => 'Ali bin Abi Thalib',
+        5 => 'Thalhah bin Ubaidillah',
+        6 => 'Zubair bin Awwam',
+    ];
+    return $daftar[$k] ?? '';
+}
+
+function kelas_label(int $k): string
+{
+    $s = kelas_sahabat($k);
+    return 'Kelas ' . $k . ($s !== '' ? ' ' . $s : '');
+}
+
 function ta_start(string $ta): int
 {
     return (int) substr($ta, 0, 4);
