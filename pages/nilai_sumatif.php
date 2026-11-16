@@ -238,7 +238,7 @@ echo angkatan_lock_alert();
         </tbody>
       </table>
     </div>
-    <div class="hint mt">Rata Sumatif = rata-rata Lingkup Materi dan rata-rata Asesmen Akhir Semester. Nilai Akhir = formatif &times; <?= (int) profil()['bobot_formatif'] ?>% + sumatif &times; <?= (int) profil()['bobot_sumatif'] ?>% (terupdate setelah simpan). Mode Spreadsheet: panah/Tab pindah sel, klik header untuk pilih kolom/baris, salin-tempel dari Excel didukung.</div>
+    <div class="hint mt">Rata Sumatif = rata-rata Lingkup Materi dan rata-rata Asesmen Akhir Semester. Nilai Akhir raport = rata-rata nilai sumatif (terupdate setelah simpan). Mode Spreadsheet: panah/Tab pindah sel, klik header untuk pilih kolom/baris, salin-tempel dari Excel didukung.</div>
   </form>
 <?php endif; ?>
 <?php endif; ?>

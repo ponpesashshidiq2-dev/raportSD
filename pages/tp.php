@@ -216,37 +216,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($aksi === 'cp_simpan') {
-        if (!is_admin()) {
-            flash_set('error', 'Hanya administrator yang dapat mengubah CP.');
-        } else {
-            $text = trim($_POST['deskripsi'] ?? '');
-            if ($text !== '' && $mapelId > 0) {
-                if ($isTahsin) {
-                    $ada = one('SELECT id FROM cp WHERE mapel_id=? AND fase=? AND jilid=?', [$mapelId, '', $jilidSel]);
-                    if ($ada) {
-                        update_row('cp', ['deskripsi' => $text], 'id=?', [$ada['id']]);
-                    } else {
-                        insert_row('cp', ['mapel_id' => $mapelId, 'fase' => '', 'jilid' => $jilidSel, 'deskripsi' => $text]);
-                    }
-                } else {
-                    $ada = one('SELECT id FROM cp WHERE mapel_id=? AND fase=? AND jilid=0', [$mapelId, $faseSel]);
-                    if ($ada) {
-                        update_row('cp', ['deskripsi' => $text], 'id=?', [$ada['id']]);
-                    } else {
-                        insert_row('cp', ['mapel_id' => $mapelId, 'fase' => $faseSel, 'jilid' => 0, 'deskripsi' => $text]);
-                    }
-                }
-                flash_set('success', 'Capaian Pembelajaran tersimpan.');
-            }
+        $text = trim($_POST['deskripsi'] ?? '');
+        if ($text === '' || $mapelId <= 0) {
+            flash_set('error', 'Capaian Pembelajaran wajib diisi atau pilih mata pelajaran.');
+            redirect('tp', $back);
         }
+        $uid = (int) (user()['id'] ?? 0);
+        $faseCp = $isTahsin ? '' : $faseSel;
+        $jilidCp = $isTahsin ? $jilidSel : 0;
+        $ada = one('SELECT id FROM cp WHERE mapel_id=? AND fase=? AND jilid=? AND user_id=?', [$mapelId, $faseCp, $jilidCp, $uid]);
+        if ($ada) {
+            update_row('cp', ['deskripsi' => $text], 'id=?', [$ada['id']]);
+        } else {
+            insert_row('cp', ['mapel_id' => $mapelId, 'fase' => $faseCp, 'jilid' => $jilidCp, 'deskripsi' => $text, 'user_id' => $uid]);
+        }
+        flash_set('success', 'Capaian Pembelajaran tersimpan atas nama Anda — CP pengguna lain tidak berubah.');
         redirect('tp', $back);
     }
 
     if ($aksi === 'tp_simpan') {
-        if (!is_admin()) {
-            flash_set('error', 'Hanya administrator yang dapat mengubah TP.');
-            redirect('tp');
-        }
         $id = (int) ($_POST['id'] ?? 0);
         $data = [
             'mapel_id' => $mapelId,
@@ -304,10 +292,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($aksi === 'tp_hapus') {
-        if (!is_admin()) {
-            flash_set('error', 'Hanya administrator yang dapat menghapus TP.');
-            redirect('tp');
-        }
         $tid = (int) ($_POST['id'] ?? 0);
         if (!one('SELECT t.id FROM tp t JOIN mapel m ON m.id = t.mapel_id WHERE t.id=?', [$tid])) {
             flash_set('error', 'TP tidak ditemukan.');
@@ -393,12 +377,9 @@ if ($mapelId > 0 && $mapel === null) {
     $mapelId = 0;
 }
 $isTahsin = is_tahsin($mapel);
-$cp = null;
-if ($mapelId > 0) {
-    $cp = $isTahsin
-        ? one('SELECT * FROM cp WHERE mapel_id=? AND fase=? AND jilid=?', [$mapelId, '', $jilidSel])
-        : one('SELECT * FROM cp WHERE mapel_id=? AND fase=? AND jilid=0', [$mapelId, $faseSel]);
-}
+$cp = $mapelId > 0
+    ? cp_baca($mapelId, $isTahsin ? '' : $faseSel, $isTahsin ? $jilidSel : 0)
+    : null;
 $tps = $mapelId > 0 ? all('SELECT * FROM tp WHERE mapel_id=? AND kelas=? AND jilid=? AND semester=? ORDER BY urutan, id',
     [$mapelId, $isTahsin ? 0 : $kelasSel, $isTahsin ? $jilidSel : 0, $semSel]) : [];
 $legacyTps = ($mapelId > 0 && $isTahsin)
@@ -409,9 +390,9 @@ if (!empty($_GET['edit'])) {
     $editTp = one('SELECT * FROM tp WHERE id=?', [(int) $_GET['edit']]);
 }
 
-$subtitle = 'TP tiap mapel per kelas & semester (Kurikulum Merdeka, deep learning); CP mengacu ketetapan Dinas Pendidikan per fase.';
+$subtitle = 'TP tiap mapel per kelas & semester (Kurikulum Merdeka, deep learning) — dapat ditambah, diubah, dan dihapus oleh setiap pengguna. CP mengacu ketetapan Dinas Pendidikan per fase dan tersimpan per pengguna.';
 if ($isTahsin) {
-    $subtitle = 'TP & CP Tahsin disusun per Jilid (1-9) berlaku untuk semua kelas — diinput satu kali admin. Pemilih Jilid di bawah menentukan TP yang ditampilkan.';
+    $subtitle = 'TP & CP Tahsin disusun per Jilid (1-9) berlaku untuk semua kelas. Pemilih Jilid di bawah menentukan TP yang ditampilkan; TP dapat diubah semua pengguna, CP tersimpan per pengguna.';
 }
 page_head('Tujuan Pembelajaran', $subtitle, '<a class="btn secondary" href="index.php?page=tp&act=template">Unduh Template TP</a>');
 echo context_bar();
@@ -515,8 +496,9 @@ if (is_admin() && $tpBawaanCount > 0): ?>
   <div class="card">
     <h3>Capaian Pembelajaran (CP) - <?= e($mapel['nama']) ?> - <?= $isTahsin ? 'Jilid ' . $jilidSel : 'Fase ' . e($faseSel) ?></h3>
     <div class="hint mb"><?= $isTahsin
-        ? 'Untuk Tahsin, CP diinput per Jilid (1-9) — satu kali dan berlaku untuk semua kelas. CP menjadi dasar penyusunan TP dan deskripsi capaian kompetensi pada raport.'
-        : 'Diisi sesuai ketetapan Dinas Pendidikan / kanonik CP Kurikulum Merdeka. CP menjadi dasar penyusunan TP dan deskripsi capaian kompetensi pada raport.' ?></div>
+        ? 'Untuk Tahsin, CP diinput per Jilid (1-9) — berlaku untuk semua kelas. CP menjadi dasar penyusunan TP dan deskripsi capaian kompetensi pada raport.'
+        : 'Diisi sesuai ketetapan Dinas Pendidikan / kanonik CP Kurikulum Merdeka. CP menjadi dasar penyusunan TP dan deskripsi capaian kompetensi pada raport.' ?>
+      <br><b>CP bersifat per pengguna:</b> yang tersimpan hanya milik Anda — CP milik pengguna lain maupun administrator tidak ikut berubah.</div>
     <form method="post" action="index.php?page=tp">
       <?= csrf_field() ?>
       <input type="hidden" name="aksi" value="cp_simpan">
@@ -524,19 +506,14 @@ if (is_admin() && $tpBawaanCount > 0): ?>
       <input type="hidden" name="kelas" value="<?= $kelasSel ?>">
       <input type="hidden" name="sem" value="<?= $semSel ?>">
       <input type="hidden" name="jilid" value="<?= $jilidSel ?>">
-      <?php if (is_admin()): ?>
-        <div class="save-bar save-bar-in"><button class="btn" type="submit">Simpan CP</button><span class="hint">Tombol menempel di atas — simpan tanpa menggulir.</span></div>
-      <?php endif; ?>
-      <textarea name="deskripsi" rows="5" <?= is_admin() ? '' : 'readonly' ?>><?= e($cp['deskripsi'] ?? '') ?></textarea>
-      <?php if (!is_admin()): ?>
-        <div class="hint mt">Tampilan hanya-baca untuk peran Anda.</div>
-      <?php endif; ?>
+      <div class="save-bar save-bar-in"><button class="btn" type="submit">Simpan CP</button><span class="hint">Tombol menempel di atas — simpan tanpa menggulir.</span></div>
+      <textarea name="deskripsi" rows="5"><?= e($cp['deskripsi'] ?? '') ?></textarea>
+      <div class="hint mt">Bila Anda belum pernah menyimpan, tampil CP bersama (unggahan admin) sebagai acuan awal — menyimpan akan membuat CP milik Anda sendiri.</div>
     </form>
   </div>
 
   <div class="card">
     <h3><?= $editTp ? 'Ubah TP' : 'Tambah TP' ?> - <?= $isTahsin ? 'Jilid ' . $jilidSel : 'Kelas ' . $kelasSel ?> - Semester <?= $semSel ?></h3>
-    <?php if (is_admin()): ?>
     <form method="post" action="index.php?page=tp">
       <?= csrf_field() ?>
       <input type="hidden" name="aksi" value="tp_simpan">
@@ -559,9 +536,7 @@ if (is_admin() && $tpBawaanCount > 0): ?>
         <div class="field"><label>Urutan</label><input type="number" name="urutan" min="1" value="<?= (int) ($editTp['urutan'] ?? count($tps) + 1) ?>"></div>
       </div>
     </form>
-    <?php else: ?>
-      <div class="hint">TP diinput dan dikelola oleh administrator (hasil unggahan admin). Tampilan hanya-baca untuk peran Anda.</div>
-    <?php endif; ?>
+    <div class="hint mt">Setiap pengguna dapat menambah, mengubah, dan menghapus TP. TP bersifat bersama — perubahan berlaku untuk semua pengguna dan tampil pada raport.</div>
   </div>
 </div>
 
@@ -584,7 +559,7 @@ if (is_admin() && $tpBawaanCount > 0): ?>
 <?php $tpsAll = array_merge($tps, array_map(fn($t) => $t + ['legacy' => 1], $legacyTps)); ?>
 <div class="table-wrap">
   <table class="tbl">
-    <thead><tr><th class="center" style="width:70px">Kode</th><th>Deskripsi Tujuan Pembelajaran</th><th class="center">Nilai Formatif</th><?php if (is_admin()): ?><th class="center">Aksi</th><?php endif; ?></tr></thead>
+    <thead><tr><th class="center" style="width:70px">Kode</th><th>Deskripsi Tujuan Pembelajaran</th><th class="center">Nilai Formatif</th><th class="center">Aksi</th></tr></thead>
     <tbody>
     <?php if (!$tpsAll): ?>
       <tr><td colspan="4" class="empty"><?= $isTahsin
@@ -596,7 +571,6 @@ if (is_admin() && $tpBawaanCount > 0): ?>
         <td class="center"><span class="badge badge-blue"><?= e($t['kode']) ?></span></td>
         <td><?= e($t['deskripsi']) ?><?php if (!empty($t['legacy'])): ?> <span class="badge badge-gray">Lama - Kelas <?= (int) $t['kelas'] ?> (tidak dipakai)</span><?php endif; ?></td>
         <td class="center"><?= $isi ?> siswa</td>
-        <?php if (is_admin()): ?>
         <td class="center">
           <a class="btn sm secondary" href="index.php?page=tp&mapel=<?= $mapelId ?>&kelas=<?= $kelasSel ?>&sem=<?= $semSel ?>&jilid=<?= $jilidSel ?>&edit=<?= (int) $t['id'] ?>">Ubah</a>
           <form method="post" action="index.php?page=tp" data-confirm="Hapus TP beserta nilai formatifnya?">
@@ -610,7 +584,6 @@ if (is_admin() && $tpBawaanCount > 0): ?>
             <button class="btn sm danger" type="submit">Hapus</button>
           </form>
         </td>
-        <?php endif; ?>
       </tr>
     <?php endforeach; endif; ?>
     </tbody>

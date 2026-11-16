@@ -29,6 +29,7 @@ function db(): PDO
         migrate_user_scope($pdo);
         migrate_tp_kelas($pdo);
         migrate_jilid($pdo);
+        migrate_cp_user($pdo);
         migrate_profil_tambahan($pdo);
     }
     return $pdo;
@@ -398,21 +399,8 @@ function sumatif_aes_pastikan(int $mapel, int $kelas, string $ta, int $sem, int 
 
 function nilai_akhir(int $siswa, int $mapel, string $ta, int $sem, ?int $kelas = null): ?float
 {
-    $k = $kelas ?? (int) ctx()['kelas'];
-    $f = avg_formatif($siswa, $mapel, $ta, $sem, $k);
-    $s = avg_sumatif($siswa, $mapel, $ta, $sem, $k);
-    if ($f === null && $s === null) {
-        return null;
-    }
-    $p = profil();
-    $wf = (float) ($p['bobot_formatif'] ?? DEFAULT_BOBOT_FORMATIF);
-    $ws = (float) ($p['bobot_sumatif'] ?? DEFAULT_BOBOT_SUMATIF);
-    if ($f !== null && $s !== null) {
-        $tot = $wf + $ws;
-        if ($tot <= 0) $tot = 100;
-        return round(($f * $wf + $s * $ws) / $tot, 1);
-    }
-    return round($f !== null ? $f : $s, 1);
+    $s = avg_sumatif($siswa, $mapel, $ta, $sem, $kelas ?? (int) ctx()['kelas']);
+    return $s === null ? null : round((float) $s, 1);
 }
 
 function predikat(?float $n): string
@@ -444,6 +432,27 @@ function nilai_sebelumnya(int $siswa, int $mapel, string $ta, int $sem, ?int $ke
     return nilai_akhir($siswa, $mapel, $pta, $psem, $kelas);
 }
 
+function cp_pilih(array $rows): ?array
+{
+    $uid = (int) (user()['id'] ?? 0);
+    $bersama = null;
+    foreach ($rows as $r) {
+        $rid = (int) ($r['user_id'] ?? 0);
+        if ($rid === $uid) {
+            return $r;
+        }
+        if ($rid === 0 && $bersama === null) {
+            $bersama = $r;
+        }
+    }
+    return $bersama;
+}
+
+function cp_baca(int $mapel, string $fase, int $jilid): ?array
+{
+    return cp_pilih(all('SELECT * FROM cp WHERE mapel_id=? AND fase=? AND jilid=?', [$mapel, $fase, $jilid]));
+}
+
 function capaian_kompetensi(int $siswa, int $mapel, string $ta, int $sem, string $fase, string $nama = '', ?int $kelas = null): array
 {
     $rows = all(
@@ -457,10 +466,10 @@ function capaian_kompetensi(int $siswa, int $mapel, string $ta, int $sem, string
         $cp = null;
         if (is_tahsin(one('SELECT nama FROM mapel WHERE id=?', [$mapel]))) {
             $j = jilid_siswa($siswa, $mapel, $ta, $sem);
-            $cp = one("SELECT deskripsi FROM cp WHERE mapel_id=? AND fase IN ('',?) AND jilid IN (?,0)
-                ORDER BY jilid DESC LIMIT 1", [$mapel, $fase, $j]);
+            $cp = cp_pilih(all("SELECT * FROM cp WHERE mapel_id=? AND fase IN ('',?) AND jilid IN (?,0)
+                ORDER BY jilid DESC", [$mapel, $fase, $j]));
         }
-        $cp ??= one('SELECT deskripsi FROM cp WHERE mapel_id=? AND fase=? AND jilid=0', [$mapel, $fase]);
+        $cp ??= cp_pilih(all('SELECT * FROM cp WHERE mapel_id=? AND fase=? AND jilid=0', [$mapel, $fase]));
         $text = $cp ? $cp['deskripsi'] : 'Belum ada data penilaian formatif.';
         return [
             'tinggi' => 'Capaian pembelajaran: ' . $text,

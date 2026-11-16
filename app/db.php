@@ -57,7 +57,8 @@ CREATE TABLE cp (
   fase TEXT NOT NULL,
   jilid INTEGER NOT NULL DEFAULT 0,
   deskripsi TEXT NOT NULL,
-  UNIQUE (mapel_id, fase, jilid)
+  user_id INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (mapel_id, fase, jilid, user_id)
 );
 CREATE TABLE tp (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -696,6 +697,38 @@ function migrate_jilid(PDO $pdo): void
             SELECT id, mapel_id, fase, 0, deskripsi FROM cp');
         $pdo->exec('DROP TABLE cp');
         $pdo->exec('ALTER TABLE cp_jilid_migrate RENAME TO cp');
+    }
+}
+
+function migrate_cp_user(PDO $pdo): void
+{
+    if (!table_exists($pdo, 'cp')) {
+        return;
+    }
+    $kolom = array_map(fn($c) => $c['name'], $pdo->query('PRAGMA table_info(cp)')->fetchAll(PDO::FETCH_ASSOC));
+    if (in_array('user_id', $kolom, true)) {
+        return;
+    }
+    $pdo->beginTransaction();
+    try {
+        $pdo->exec('DROP TABLE IF EXISTS cp_user_migrate');
+        $pdo->exec('CREATE TABLE cp_user_migrate (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          mapel_id INTEGER NOT NULL,
+          fase TEXT NOT NULL,
+          jilid INTEGER NOT NULL DEFAULT 0,
+          deskripsi TEXT NOT NULL,
+          user_id INTEGER NOT NULL DEFAULT 0,
+          UNIQUE (mapel_id, fase, jilid, user_id)
+        )');
+        $pdo->exec('INSERT INTO cp_user_migrate (id, mapel_id, fase, jilid, deskripsi, user_id)
+            SELECT id, mapel_id, fase, jilid, deskripsi, 0 FROM cp');
+        $pdo->exec('DROP TABLE cp');
+        $pdo->exec('ALTER TABLE cp_user_migrate RENAME TO cp');
+        $pdo->commit();
+    } catch (\Throwable $e) {
+        $pdo->rollBack();
+        throw $e;
     }
 }
 

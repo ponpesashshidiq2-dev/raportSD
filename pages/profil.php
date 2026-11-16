@@ -21,8 +21,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $konteks[$f] = trim($_POST[$f]);
                 }
             }
-            $konteks['bobot_formatif'] = max(0, min(100, (int) ($_POST['bobot_formatif'] ?? 40)));
-            $konteks['bobot_sumatif'] = max(0, min(100, (int) ($_POST['bobot_sumatif'] ?? 60)));
         }
         foreach (['tanggal_rapor', 'tanggal_biodata'] as $f) {
             if (isset($_POST[$f])) {
@@ -174,16 +172,6 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
       </div>
       <div class="form-row">
         <div class="field">
-          <label>Bobot Formatif (%)</label>
-          <input type="number" name="bobot_formatif" min="0" max="100" value="<?= (int) $p['bobot_formatif'] ?>"<?= $disabled ?>>
-        </div>
-        <div class="field">
-          <label>Bobot Sumatif (%)</label>
-          <input type="number" name="bobot_sumatif" min="0" max="100" value="<?= (int) $p['bobot_sumatif'] ?>"<?= $disabled ?>>
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="field">
           <label>Tanggal Rapor (untuk Cetak Raport)</label>
           <input type="date" name="tanggal_rapor" value="<?= e($p['tanggal_rapor']) ?>"<?= $disabledEdit ?>>
           <div class="hint">Tanggal yang tercetak pada raport — kosongkan untuk memakai tanggal hari ini.</div>
@@ -194,7 +182,7 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
           <div class="hint">Tanggal pada biodata siswa di sampul — kosongkan untuk memakai tanggal masuk tiap siswa.</div>
         </div>
       </div>
-      <div class="hint mb">Nilai Akhir = rata-rata formatif &times; bobot + rata-rata sumatif &times; bobot.</div>
+      <div class="hint mb">Nilai Akhir raport = rata-rata nilai sumatif (rata Lingkup Materi &amp; rata AES) — nilai formatif dipakai untuk deskripsi capaian kompetensi.</div>
     </div>
   </div>
 </form>

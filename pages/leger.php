@@ -84,10 +84,9 @@ echo angkatan_lock_alert();
 <?php elseif (!$mapelList): ?>
   <div class="card empty">Belum ada mata pelajaran untuk kelas <?= (int) $c['kelas'] ?>. Tambahkan pada menu <a href="index.php?page=mapel">Mata Pelajaran</a>.</div>
 <?php else: ?>
-  <?php $pProfil = profil(); ?>
 <div class="table-wrap">
   <table class="tbl">
-    <caption>Nilai akhir = formatif &times; <?= (int) $pProfil['bobot_formatif'] ?>% + sumatif &times; <?= (int) $pProfil['bobot_sumatif'] ?>% &middot; <?= e($c['ta']) ?> Semester <?= (int) $c['semester'] ?> &middot; sel di bawah KKM ditandai merah</caption>
+    <caption>Nilai akhir = rata-rata nilai sumatif (rata Lingkup Materi &amp; rata AES) &middot; <?= e($c['ta']) ?> Semester <?= (int) $c['semester'] ?> &middot; sel di bawah KKM ditandai merah</caption>
     <thead>
       <tr>
         <th class="center" style="width:40px">No</th>

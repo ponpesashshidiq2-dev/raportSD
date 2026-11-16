@@ -173,8 +173,13 @@ table.rp-tbl td.capai{font-size:12.5px}
   .sidebar,.topbar,.footer,.raport-tools,.page-head,.ctx-bar,.no-print,.alert,.save-bar{display:none!important}
   .content{padding:0}
   body{background:#fff}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .raport-sheet{border:none;box-shadow:none;margin:0 auto;padding:0;max-width:100%}
   .raport-sheet+.raport-sheet{page-break-before:always}
+  .rp-ident,.rp-tbl tr,.rp-tbl td,.rp-hadir tr,.rp-box,.rp-dua,.rp-kok-desk,.rp-tanggapan,
+  .rp-keputusan,.rp-keputusan-box,.rp-ttd,.rp-kehadiran,.sp-cover,.sp-bawah{page-break-inside:avoid;break-inside:avoid}
+  .rp-tbl thead,.rp-kehadiran thead{display:table-header-group}
+  .rp-section-title,.rp-title,.rp-sub{page-break-after:avoid;break-after:avoid}
   a{color:#000;text-decoration:none}
 }
 @media (max-width:900px){
