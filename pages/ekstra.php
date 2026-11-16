@@ -149,7 +149,7 @@ echo context_bar();
         <div class="desk-item">
           <label><span class="desk-dot"></span><?= e($ek['nama']) ?></label>
           <input type="text" name="ekdesk[<?= (int) $ek['id'] ?>]" value="<?= e($ekDesk[(int) $ek['id']] ?? '') ?>"
-            maxlength="300" placeholder="Deskripsi kegiatan (opsional)"<?= can_edit() ? '' : ' disabled' ?>>
+            maxlength="600" placeholder="Deskripsi kegiatan (opsional)"<?= can_edit() ? '' : ' disabled' ?>>
         </div>
       <?php endforeach; ?>
     </div>
