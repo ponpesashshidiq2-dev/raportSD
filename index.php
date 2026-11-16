@@ -12,6 +12,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 db();
+naik_kelas_otomatis();
 
 $page = $_GET['page'] ?? 'dashboard';
 if (!is_string($page) || !preg_match('/^[a-z_]+$/', $page)) {

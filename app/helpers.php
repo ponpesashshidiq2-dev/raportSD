@@ -31,6 +31,7 @@ function db(): PDO
         migrate_jilid($pdo);
         migrate_cp_user($pdo);
         migrate_profil_tambahan($pdo);
+        migrate_tanggal_context($pdo);
     }
     return $pdo;
 }
@@ -270,13 +271,62 @@ function ctx(): array
     if ($c === null) {
         $p = profil();
         $c = [
-            'ta' => $p['ta'],
+            'ta' => ta_oto($p),
             'semester' => (int) $p['semester'],
             'kelas' => (int) $p['kelas_aktif'],
             'fase' => $p['fase'] ?: fase_of((int) $p['kelas_aktif']),
         ];
     }
     return $c;
+}
+
+function ta_oto(?array $p = null): string
+{
+    $u = user();
+    $ang = (int) ($u['angkatan'] ?? 0);
+    $p = $p ?? profil();
+    $k = (int) ($p['kelas_aktif'] ?? 1);
+    if ($ang > 0 && $k >= 1 && $k <= 6) {
+        $start = $ang + $k - 1;
+        return $start . '/' . ($start + 1);
+    }
+    return (string) $p['ta'];
+}
+
+function tanggal_ctx(string $kolom, ?int $kelas = null, ?int $sem = null): string
+{
+    if (!in_array($kolom, ['tanggal_rapor', 'tanggal_biodata'], true)) {
+        return '';
+    }
+    $c = ctx();
+    $k = $kelas ?? (int) $c['kelas'];
+    $s = $sem ?? (int) $c['semester'];
+    $r = one("SELECT $kolom AS v FROM tanggal_context WHERE kelas=? AND semester=?", [$k, $s]);
+    $v = $r === null ? trim((string) (profil()[$kolom] ?? '')) : trim((string) $r['v']);
+    return preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) ? $v : '';
+}
+
+function tanggal_rapor_ctx(?int $kelas = null, ?int $sem = null): string
+{
+    return tanggal_ctx('tanggal_rapor', $kelas, $sem);
+}
+
+function tanggal_biodata_ctx(?int $kelas = null, ?int $sem = null): string
+{
+    return tanggal_ctx('tanggal_biodata', $kelas, $sem);
+}
+
+function tanggal_ctx_set(int $kelas, int $sem, string $rapor, string $biodata): void
+{
+    $data = [
+        'tanggal_rapor' => preg_match('/^\d{4}-\d{2}-\d{2}$/', $rapor) ? $rapor : '',
+        'tanggal_biodata' => preg_match('/^\d{4}-\d{2}-\d{2}$/', $biodata) ? $biodata : '',
+    ];
+    if (one('SELECT kelas FROM tanggal_context WHERE kelas=? AND semester=?', [$kelas, $sem])) {
+        update_row('tanggal_context', $data, 'kelas=? AND semester=?', [$kelas, $sem]);
+    } else {
+        insert_row('tanggal_context', $data + ['kelas' => $kelas, 'semester' => $sem]);
+    }
 }
 
 function fase_of(int $kelas): string
@@ -298,6 +348,38 @@ function kelas_angkatan(): ?int
     }
     $taStart = (int) substr((string) (ctx()['ta'] ?? ''), 0, 4);
     return $taStart - $ang + 1;
+}
+
+function naik_kelas_otomatis(): void
+{
+    static $selesai = false;
+    if ($selesai) {
+        return;
+    }
+    $selesai = true;
+
+    $ta = ta_oto();
+    $start = (int) substr($ta, 0, 4);
+    if ($start < 2000 || $start > 2100) {
+        return;
+    }
+    $kini = (int) date('Y');
+    $last = (int) substr((string) (profil()['ta_promosi'] ?? ''), 0, 4);
+    if ($last < 2000) {
+        update_row('profil', ['ta_promosi' => (string) max(2000, min($start, $kini))], 'id=?', [1]);
+        return;
+    }
+    if ($start <= $last || $start > $kini) {
+        return;
+    }
+
+    $nTahun = min(6, $start - $last);
+    $n = 0;
+    for ($i = 0; $i < $nTahun; $i++) {
+        $n = run("UPDATE siswa SET kelas = kelas + 1 WHERE status='aktif' AND kelas < 6");
+    }
+    update_row('profil', ['ta_promosi' => (string) $start], 'id=?', [1]);
+    flash_set('success', 'Tahun ajaran ' . $ta . ' terdeteksi — ' . $n . ' siswa otomatis dinaikkan satu tingkat kelas.');
 }
 
 function angkatan_lock_alert(): string

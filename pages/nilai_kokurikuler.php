@@ -161,8 +161,8 @@ if (!$siswas): ?>
         <caption>Kelas <?= $c['kelas'] ?> - Semester <?= $c['semester'] ?> - <?= e($c['ta']) ?></caption>
         <thead>
           <tr>
-            <th class="center" style="width:40px">No</th>
-            <th>Nama Siswa</th>
+            <th class="center" style="width:40px" data-frozen="no">No</th>
+            <th data-frozen="nama">Nama Siswa</th>
             <?php foreach ($dimensi as $label => $teks): ?>
               <th class="center" title="<?= e($teks) ?>" style="min-width:118px"><?= e($label) ?></th>
             <?php endforeach; ?>
@@ -173,8 +173,8 @@ if (!$siswas): ?>
         <?php $no = 0; foreach ($siswas as $s): $no++; $sid = (int) $s['id'];
             $cap = $capMap[$sid] ?? ['predikat' => [], 'deskripsi' => '']; ?>
           <tr>
-            <td class="center"><?= $no ?></td>
-            <td class="name-cell"><?= e($s['nama']) ?></td>
+            <td class="center" data-frozen="no"><?= $no ?></td>
+            <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?></td>
             <?php foreach (array_keys($dimensi) as $i => $label): ?>
               <td class="center">
                 <select name="predikat[<?= $sid ?>][<?= $i ?>]" style="min-width:110px">

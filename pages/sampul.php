@@ -77,7 +77,7 @@ if ($pilihanBasi): ?>
     $jkTeks = $s['jk'] === 'P' ? 'Perempuan' : 'Laki-laki';
 
     $kotaCetak = trim($p['kota']);
-    $tglBiodataProfil = $tglAman($p['tanggal_biodata'] ?? '');
+    $tglBiodataProfil = $tglAman(tanggal_biodata_ctx($kelas, (int) $c['semester']));
     $tglMasuk = $tglBiodataProfil !== '' ? $tglBiodataProfil : $tglAman($s['tanggal_masuk'] ?? '');
     $tglCetak = $kotaCetak;
     if ($tglMasuk !== '') {

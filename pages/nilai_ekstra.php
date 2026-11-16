@@ -73,8 +73,8 @@ if (!$ekstraList): ?>
       <caption>Kelas <?= $c['kelas'] ?> - Semester <?= $c['semester'] ?> - <?= e($c['ta']) ?></caption>
       <thead>
         <tr>
-          <th class="center" style="width:40px">No</th>
-          <th>Nama Siswa</th>
+          <th class="center" style="width:40px" data-frozen="no">No</th>
+          <th data-frozen="nama">Nama Siswa</th>
           <?php foreach ($ekstraList as $ek): ?>
             <th class="center" title="<?= e($ek['nama']) ?>"><?= e(mb_strimwidth($ek['nama'], 0, 18, '…')) ?></th>
           <?php endforeach; ?>
@@ -83,8 +83,8 @@ if (!$ekstraList): ?>
       <tbody>
       <?php $no = 0; foreach ($siswas as $s): $no++; ?>
         <tr>
-          <td class="center"><?= $no ?></td>
-          <td class="name-cell"><?= e($s['nama']) ?></td>
+          <td class="center" data-frozen="no"><?= $no ?></td>
+          <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?></td>
           <?php foreach ($ekstraList as $ek):
               $k = $ek['id'] . '_' . $s['id']; ?>
             <td class="center" style="min-width:120px">

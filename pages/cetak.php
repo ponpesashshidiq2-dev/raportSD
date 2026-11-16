@@ -205,21 +205,22 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
   </div>
   <?php endif; ?>
 
-  <div class="rp-place"><?= e($p['kota'] ?: '........................') ?>, <?= e(trim($p['tanggal_rapor'] ?? '') !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $p['tanggal_rapor']) ? tgl_indo($p['tanggal_rapor']) : tgl_indo()) ?></div>
+  <div class="rp-place"><?= e($p['kota'] ?: '........................') ?>, <?= e(tanggal_rapor_ctx($kelas, (int) $c['semester']) !== '' ? tgl_indo(tanggal_rapor_ctx($kelas, (int) $c['semester'])) : tgl_indo()) ?></div>
   <div class="rp-ttd">
     <div class="pos">
       <div class="role">Orang Tua / Wali</div>
-      <div class="who">( <?= e($s['ortu'] ?? '') ?: '..........................' ?> )</div>
-      <div class="nip"></div>
+      <?php $ortuTtd = trim((string) ($s['ortu'] ?? '')); ?>
+      <div class="who<?= $ortuTtd !== '' ? '' : ' who-ttd' ?>"><?= $ortuTtd !== '' ? '<span class="nm">( ' . e($ortuTtd) . ' )</span>' : '' ?></div>
+      <div class="nip">&nbsp;</div>
     </div>
     <div class="pos">
       <div class="role">Wali Kelas</div>
-      <div class="who"><?= e($walikelas['nama'] ?: '( .......................... )') ?></div>
+      <div class="who"><span class="nm"><?= e($walikelas['nama'] ?: '..........................') ?></span></div>
       <div class="nip">NBM. <?= e($walikelas['nip'] ?: '..........................') ?></div>
     </div>
     <div class="pos pos-tengah">
       <div class="role">Kepala Sekolah</div>
-      <div class="who"><?= e($p['kepsek'] ?: '( .......................... )') ?></div>
+      <div class="who"><span class="nm"><?= e($p['kepsek'] ?: '..........................') ?></span></div>
       <div class="nip">NBM. <?= e($p['kepsek_nip'] ?: '..........................') ?></div>
     </div>
   </div>

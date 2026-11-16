@@ -113,7 +113,7 @@ function render_layout(string $content, string $title, string $page): string
           <?php endforeach; ?>
           <?= $content ?>
         </div>
-        <footer class="footer">© <?= date('Y') ?> <?= e(APP_NAME) ?> &middot; Semester <?= (int) $p['semester'] ?> &middot; Tahun Ajaran <?= e($p['ta']) ?> &middot; Kelas <?= (int) $p['kelas_aktif'] ?> (<?= e($p['fase']) ?>)</footer>
+        <footer class="footer">© <?= date('Y') ?> <?= e(APP_NAME) ?> &middot; Semester <?= (int) $p['semester'] ?> &middot; Tahun Ajaran <?= e(ta_oto($p)) ?> &middot; Kelas <?= (int) $p['kelas_aktif'] ?> (<?= e($p['fase']) ?>)</footer>
       </div>
     </div>
     <script src="assets/app.js"></script>

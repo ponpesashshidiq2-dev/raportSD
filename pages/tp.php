@@ -497,8 +497,7 @@ if (is_admin() && $tpBawaanCount > 0): ?>
     <h3>Capaian Pembelajaran (CP) - <?= e($mapel['nama']) ?> - <?= $isTahsin ? 'Jilid ' . $jilidSel : 'Fase ' . e($faseSel) ?></h3>
     <div class="hint mb"><?= $isTahsin
         ? 'Untuk Tahsin, CP diinput per Jilid (1-9) — berlaku untuk semua kelas. CP menjadi dasar penyusunan TP dan deskripsi capaian kompetensi pada raport.'
-        : 'Diisi sesuai ketetapan Dinas Pendidikan / kanonik CP Kurikulum Merdeka. CP menjadi dasar penyusunan TP dan deskripsi capaian kompetensi pada raport.' ?>
-      <br><b>CP bersifat per pengguna:</b> yang tersimpan hanya milik Anda — CP milik pengguna lain maupun administrator tidak ikut berubah.</div>
+        : 'Diisi sesuai ketetapan Dinas Pendidikan / kanonik CP Kurikulum Merdeka. CP menjadi dasar penyusunan TP dan deskripsi capaian kompetensi pada raport.' ?></div>
     <form method="post" action="index.php?page=tp">
       <?= csrf_field() ?>
       <input type="hidden" name="aksi" value="cp_simpan">
@@ -508,7 +507,6 @@ if (is_admin() && $tpBawaanCount > 0): ?>
       <input type="hidden" name="jilid" value="<?= $jilidSel ?>">
       <div class="save-bar save-bar-in"><button class="btn" type="submit">Simpan CP</button><span class="hint">Tombol menempel di atas — simpan tanpa menggulir.</span></div>
       <textarea name="deskripsi" rows="5"><?= e($cp['deskripsi'] ?? '') ?></textarea>
-      <div class="hint mt">Bila Anda belum pernah menyimpan, tampil CP bersama (unggahan admin) sebagai acuan awal — menyimpan akan membuat CP milik Anda sendiri.</div>
     </form>
   </div>
 

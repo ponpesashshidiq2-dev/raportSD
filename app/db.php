@@ -32,7 +32,15 @@ CREATE TABLE profil (
   kelas_aktif INTEGER NOT NULL DEFAULT 1,
   fase TEXT NOT NULL DEFAULT 'A',
   bobot_formatif INTEGER NOT NULL DEFAULT 40,
-  bobot_sumatif INTEGER NOT NULL DEFAULT 60
+  bobot_sumatif INTEGER NOT NULL DEFAULT 60,
+  ta_promosi TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE tanggal_context (
+  kelas INTEGER NOT NULL,
+  semester INTEGER NOT NULL,
+  tanggal_rapor TEXT NOT NULL DEFAULT '',
+  tanggal_biodata TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (kelas, semester)
 );
 CREATE TABLE walikelas (
   kelas INTEGER NOT NULL,
@@ -367,6 +375,20 @@ function migrate_profil_tambahan(PDO $pdo): void
             $pdo->exec("ALTER TABLE profil ADD COLUMN $c TEXT NOT NULL DEFAULT ''");
         }
     }
+    if (!in_array('ta_promosi', $cols, true)) {
+        $pdo->exec("ALTER TABLE profil ADD COLUMN ta_promosi TEXT NOT NULL DEFAULT ''");
+    }
+}
+
+function migrate_tanggal_context(PDO $pdo): void
+{
+    $pdo->exec("CREATE TABLE IF NOT EXISTS tanggal_context (
+      kelas INTEGER NOT NULL,
+      semester INTEGER NOT NULL,
+      tanggal_rapor TEXT NOT NULL DEFAULT '',
+      tanggal_biodata TEXT NOT NULL DEFAULT '',
+      PRIMARY KEY (kelas, semester)
+    )");
 }
 
 function migrate_catatan_wali(PDO $pdo): void

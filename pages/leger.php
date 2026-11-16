@@ -89,8 +89,8 @@ echo angkatan_lock_alert();
     <caption>Nilai akhir = rata-rata nilai sumatif (rata Lingkup Materi &amp; rata AES) &middot; <?= e($c['ta']) ?> Semester <?= (int) $c['semester'] ?> &middot; sel di bawah KKM ditandai merah</caption>
     <thead>
       <tr>
-        <th class="center" style="width:40px">No</th>
-        <th>Nama</th>
+        <th class="center" style="width:40px" data-frozen="no">No</th>
+        <th data-frozen="nama">Nama</th>
         <?php foreach ($mapelList as $m): $mid = (int) $m['id']; ?>
         <th class="center"><?= e($m['nama']) ?><div class="hint">KKM <?= $kkmMap[$mid] !== null ? (int) $kkmMap[$mid] : '-' ?></div></th>
         <?php endforeach; ?>
@@ -101,8 +101,8 @@ echo angkatan_lock_alert();
     <tbody>
       <?php $no = 0; foreach ($siswas as $s): $no++; $sid = (int) $s['id']; ?>
       <tr>
-        <td class="center"><?= $no ?></td>
-        <td class="name-cell"><?= e($s['nama']) ?><div class="hint"><?= e($s['nis']) ?></div></td>
+        <td class="center" data-frozen="no"><?= $no ?></td>
+        <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint"><?= e($s['nis']) ?></div></td>
         <?php foreach ($mapelList as $m): $mid = (int) $m['id']; $na = $nilaiMap[$sid][$mid] ?? null; $kkm = $kkmMap[$mid]; ?>
         <td class="center<?= $na !== null && $kkm !== null && $na < $kkm ? ' nilai-red' : '' ?>"><?= $na !== null ? $fmt($na) : '-' ?></td>
         <?php endforeach; ?>

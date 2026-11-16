@@ -65,8 +65,8 @@ echo angkatan_lock_alert();
       <caption>Kelas <?= $c['kelas'] ?> - Semester <?= $c['semester'] ?> - <?= e($c['ta']) ?></caption>
       <thead>
         <tr>
-          <th class="center" style="width:40px">No</th>
-          <th>Nama Siswa</th>
+          <th class="center" style="width:40px" data-frozen="no">No</th>
+          <th data-frozen="nama">Nama Siswa</th>
           <th class="center" style="width:130px">Sakit (hari)</th>
           <th class="center" style="width:130px">Izin (hari)</th>
           <th class="center" style="width:170px">Tanpa Keterangan (hari)</th>
@@ -80,8 +80,8 @@ echo angkatan_lock_alert();
           $iz = (int) ($k['izin'] ?? 0);
           $tk = (int) ($k['tka'] ?? 0); ?>
         <tr>
-          <td class="center"><?= $no ?></td>
-          <td class="name-cell"><?= e($s['nama']) ?><div class="hint">NISN <?= e($s['nisn']) ?></div></td>
+          <td class="center" data-frozen="no"><?= $no ?></td>
+          <td class="name-cell" data-frozen="nama"><?= e($s['nama']) ?><div class="hint">NISN <?= e($s['nisn']) ?></div></td>
           <td class="center"><input type="number" name="sakit[<?= (int) $s['id'] ?>]" min="0" max="180" value="<?= $sa ?>"></td>
           <td class="center"><input type="number" name="izin[<?= (int) $s['id'] ?>]" min="0" max="180" value="<?= $iz ?>"></td>
           <td class="center"><input type="number" name="tka[<?= (int) $s['id'] ?>]" min="0" max="180" value="<?= $tk ?>" <?= $tk > 0 ? 'class="nilai-red"' : '' ?>></td>

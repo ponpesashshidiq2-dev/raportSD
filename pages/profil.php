@@ -5,15 +5,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $aksi = $_POST['aksi'] ?? '';
 
     if ($aksi === 'simpan' && can_edit()) {
+        $taOto = (int) (user()['angkatan'] ?? 0) > 0;
         $konteks = [
-            'ta' => trim($_POST['ta'] ?? ''),
             'semester' => in_array((int) ($_POST['semester'] ?? 1), [1, 2], true) ? (int) $_POST['semester'] : 1,
             'kelas_aktif' => min(6, max(1, (int) ($_POST['kelas_aktif'] ?? 1))),
             'fase' => in_array($_POST['fase'] ?? '', ['A', 'B', 'C'], true) ? $_POST['fase'] : 'A',
         ];
-        if (!preg_match('/^\d{4}\/\d{4}$/', $konteks['ta'])) {
-            flash_set('error', 'Format tahun ajaran harus 2025/2026.');
-            redirect('profil');
+        if (!$taOto) {
+            $konteks['ta'] = trim($_POST['ta'] ?? '');
+            if (!preg_match('/^\d{4}\/\d{4}$/', $konteks['ta'])) {
+                flash_set('error', 'Format tahun ajaran harus 2025/2026.');
+                redirect('profil');
+            }
         }
         if (is_admin()) {
             foreach (['sekolah', 'npsn', 'alamat', 'kota', 'telp', 'email', 'website', 'kepsek', 'kepsek_nip'] as $f) {
@@ -22,13 +25,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
-        foreach (['tanggal_rapor', 'tanggal_biodata'] as $f) {
-            if (isset($_POST[$f])) {
-                $v = trim($_POST[$f]);
-                $konteks[$f] = preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) ? $v : '';
-            }
-        }
+        $c = ctx();
+        $tglR = trim($_POST['tanggal_rapor'] ?? '');
+        $tglB = trim($_POST['tanggal_biodata'] ?? '');
+        $tglR = preg_match('/^\d{4}-\d{2}-\d{2}$/', $tglR) ? $tglR : '';
+        $tglB = preg_match('/^\d{4}-\d{2}-\d{2}$/', $tglB) ? $tglB : '';
+        $lamaR = tanggal_rapor_ctx((int) $c['kelas'], (int) $c['semester']);
+        $lamaB = tanggal_biodata_ctx((int) $c['kelas'], (int) $c['semester']);
         update_row('profil', $konteks, 'id=?', [1]);
+        if ($tglR !== $lamaR || $tglB !== $lamaB) {
+            tanggal_ctx_set((int) $konteks['kelas_aktif'], (int) $konteks['semester'], $tglR, $tglB);
+        }
         flash_set('success', 'Profil dan konteks raport tersimpan.');
         redirect('profil');
     }
@@ -91,15 +98,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('profil');
     }
 
-    if ($aksi === 'naik_kelas' && is_admin()) {
-        $n = run("UPDATE siswa SET kelas = kelas + 1 WHERE status='aktif' AND kelas < 6");
-        flash_set('success', "$n siswa dinaikkan satu tingkat kelas.");
-        redirect('profil');
-    }
 }
 
 $disabled = is_admin() ? '' : ' disabled';
 $disabledEdit = can_edit() ? '' : ' disabled';
+$uOto = user();
+$taOto = (int) ($uOto['angkatan'] ?? 0) > 0;
 $c = ctx();
 page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester, kelas aktif, dan wali kelas.');
 ?>
@@ -141,7 +145,12 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
       <div class="form-row">
         <div class="field">
           <label>Tahun Ajaran</label>
-          <input type="text" name="ta" value="<?= e($p['ta']) ?>" placeholder="2025/2026" required>
+          <?php if ($taOto): ?>
+            <input type="text" value="<?= e(ta_oto($p)) ?>" readonly style="background:#f1f5f9;color:var(--muted)">
+            <div class="hint">Otomatis dari tahun angkatan Anda (<?= (int) $uOto['angkatan'] ?>) + Kelas Aktif — saat kelas konteks diganti, tahun ajaran ikut menyesuaikan.</div>
+          <?php else: ?>
+            <input type="text" name="ta" value="<?= e($p['ta']) ?>" placeholder="2025/2026" required>
+          <?php endif; ?>
         </div>
         <div class="field">
           <label>Semester</label>
@@ -173,13 +182,13 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
       <div class="form-row">
         <div class="field">
           <label>Tanggal Rapor (untuk Cetak Raport)</label>
-          <input type="date" name="tanggal_rapor" value="<?= e($p['tanggal_rapor']) ?>"<?= $disabledEdit ?>>
-          <div class="hint">Tanggal yang tercetak pada raport — kosongkan untuk memakai tanggal hari ini.</div>
+          <input type="date" name="tanggal_rapor" value="<?= e(tanggal_rapor_ctx()) ?>"<?= $disabledEdit ?>>
+          <div class="hint">Tanggal yang tercetak pada raport — <b>tersimpan per Kelas &amp; Semester</b>. Ganti kelas/semester konteks, tanggal otomatis mengikuti yang tersimpan untuk konteks itu. Kosongkan untuk memakai tanggal hari ini.</div>
         </div>
         <div class="field">
           <label>Tanggal Biodata (untuk Sampul)</label>
-          <input type="date" name="tanggal_biodata" value="<?= e($p['tanggal_biodata']) ?>"<?= $disabledEdit ?>>
-          <div class="hint">Tanggal pada biodata siswa di sampul — kosongkan untuk memakai tanggal masuk tiap siswa.</div>
+          <input type="date" name="tanggal_biodata" value="<?= e(tanggal_biodata_ctx()) ?>"<?= $disabledEdit ?>>
+          <div class="hint">Tanggal pada biodata siswa di sampul — <b>tersimpan per Kelas &amp; Semester</b>, ikut berubah saat konteks diganti. Kosongkan untuk memakai tanggal masuk tiap siswa.</div>
         </div>
       </div>
       <div class="hint mb">Nilai Akhir raport = rata-rata nilai sumatif (rata Lingkup Materi &amp; rata AES) — nilai formatif dipakai untuk deskripsi capaian kompetensi.</div>
@@ -254,17 +263,7 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
 
   <div class="card">
     <h3>Naik Kelas</h3>
-    <p class="hint">Menaikkan seluruh siswa aktif satu tingkat kelas (kelas 6 tidak berubah). Riwayat nilai semester sebelumnya tetap tersimpan dan digunakan untuk pembanding kenaikan nilai di menu Mata Pelajaran.</p>
-    <p class="hint">Nilai pada semester/kelas sebelumnya wajib lebih tinggi; jika turun, akan ditandai merah pada menu Mata Pelajaran.</p>
-    <?php if (is_admin()): ?>
-      <form method="post" action="index.php?page=profil" data-confirm="Naikkan seluruh siswa aktif satu tingkat kelas?">
-        <?= csrf_field() ?>
-        <input type="hidden" name="aksi" value="naik_kelas">
-        <button class="btn blue" type="submit">Naikkan Kelas Seluruh Siswa</button>
-      </form>
-    <?php else: ?>
-      <div class="alert alert-info">Hanya administrator yang dapat menaikkan kelas.</div>
-    <?php endif; ?>
+    <p class="hint">Kenaikan kelas berjalan <b>otomatis saat tahun ajaran naik</b> — seluruh siswa aktif otomatis dinaikkan satu tingkat kelas (kelas 6 tidak berubah), tanpa perlu tombol. Riwayat nilai semester sebelumnya tetap tersimpan dan dipakai sebagai pembanding kenaikan nilai di menu Mata Pelajaran.</p>
     <div class="alert alert-warning mt">
       <b>Konteks saat ini:</b> Kelas <?= $c['kelas'] ?>, <?= e(fase_label($c['fase'])) ?>, Semester <?= $c['semester'] ?>, Tahun Ajaran <?= e($c['ta']) ?>.
     </div>
