@@ -172,7 +172,7 @@ table.rp-tbl td.capai{font-size:12.5px}
 .rp-ttd .pos-tengah{grid-column:1 / -1;justify-self:center;width:45%;min-width:230px;margin-top:4px}
 .rp-ttd .who{margin-top:auto;font-weight:700;height:44px;display:flex;align-items:flex-end;justify-content:center}
 .rp-ttd .who .nm{text-decoration:underline}
-.rp-ttd .who-ttd{width:100%;border-bottom:2px dotted #475569}
+.rp-ttd .who-ttd{width:190px;max-width:70%;margin-left:auto;margin-right:auto;border-bottom:2px dotted #475569}
 .rp-ttd .nip{font-size:12px;min-height:16px}
 .rp-ttd .role{min-height:20px}
 .rp-place{text-align:right;font-size:13.5px;margin-top:18px}
