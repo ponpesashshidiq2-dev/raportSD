@@ -92,9 +92,9 @@ page_head('Pengguna', 'Akun multiuser: administrator, wali kelas, dan kepala sek
 <?php endif; ?>
 
 <div class="alert alert-info">
-  <b>Administrator:</b> akses penuh termasuk profil, impor, dan backup. &nbsp;
-  <b>Wali Kelas:</b> kelola siswa dan seluruh input nilai. &nbsp;
-  <b>Kepala Sekolah:</b> melihat data, monitoring, dan mencetak raport.
+  <b>Administrator:</b> akses penuh termasuk profil, impor, backup, restore, dan pengosongan nilai. &nbsp;
+  <b>Wali Kelas:</b> kelola siswa, seluruh input nilai, dan unduh backup. &nbsp;
+  <b>Kepala Sekolah:</b> melihat data, monitoring, mencetak raport, dan unduh backup.
 </div>
 
 <div class="table-wrap">

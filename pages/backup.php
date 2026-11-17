@@ -1,9 +1,4 @@
 <?php
-if (!is_admin()) {
-    flash_set('error', 'Hanya administrator yang dapat mengakses backup dan restore.');
-    redirect('dashboard');
-}
-
 function backup_dump(): array
 {
     $data = ['meta' => [
@@ -12,7 +7,14 @@ function backup_dump(): array
         'waktu' => date('Y-m-d H:i:s'),
     ], 'tables' => []];
     foreach (db_tables() as $t) {
-        $data['tables'][$t] = all('SELECT * FROM ' . $t);
+        $rows = all('SELECT * FROM ' . $t);
+        if ($t === 'users' && !is_admin()) {
+            foreach ($rows as &$r) {
+                unset($r['password']);
+            }
+            unset($r);
+        }
+        $data['tables'][$t] = $rows;
     }
     return $data;
 }
@@ -28,6 +30,10 @@ if (isset($_GET['act']) && $_GET['act'] === 'download') {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!is_admin()) {
+        flash_set('error', 'Hanya administrator yang dapat melakukan restore atau mengosongkan nilai.');
+        redirect('backup');
+    }
     $aksi = $_POST['aksi'] ?? '';
 
     if ($aksi === 'restore') {
@@ -131,7 +137,7 @@ foreach (db_tables() as $t) {
     $counts[$t] = (int) scalar('SELECT COUNT(*) FROM ' . $t);
 }
 
-page_head('Backup & Restore', 'Unduh seluruh data sebagai file JSON, atau pulihkan dari file backup sebelumnya.');
+page_head('Backup & Restore', is_admin() ? 'Unduh seluruh data sebagai file JSON, atau pulihkan dari file backup sebelumnya.' : 'Unduh seluruh data sebagai file JSON untuk arsip. Restore hanya tersedia untuk Administrator.');
 ?>
 <div class="grid grid-2">
   <div class="card">
@@ -148,8 +154,12 @@ page_head('Backup & Restore', 'Unduh seluruh data sebagai file JSON, atau pulihk
     </div>
     <p class="hint">Ukuran database: <b><?= number_format($dbSize / 1024, 1) ?> KB</b></p>
     <a class="btn" href="index.php?page=backup&act=download">Unduh Backup (.json)</a>
+    <?php if (!is_admin()): ?>
+      <p class="hint" style="margin-top:12px">Restore dan pengosongan nilai hanya tersedia untuk Administrator. Unduhan dari akun ini tidak memuat hash password pengguna.</p>
+    <?php endif; ?>
   </div>
 
+  <?php if (is_admin()): ?>
   <div class="card">
     <h3>Restore (Pulihkan Data)</h3>
     <p class="hint">Restore akan <b>menimpa seluruh data saat ini</b> dengan isi file backup. Pastikan telah melakukan backup terbaru sebelum melanjutkan.</p>
@@ -173,4 +183,5 @@ page_head('Backup & Restore', 'Unduh seluruh data sebagai file JSON, atau pulihk
       <button class="btn danger" type="submit">Kosongkan Nilai</button>
     </form>
   </div>
+  <?php endif; ?>
 </div>

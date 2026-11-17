@@ -213,7 +213,7 @@ function menu_allowed(string $page): bool
         'leger' => ['admin', 'wali', 'kepsek'],
         'cetak' => ['admin', 'wali', 'kepsek'],
         'sampul' => ['admin', 'wali', 'kepsek'],
-        'backup' => ['admin'],
+        'backup' => ['admin', 'wali', 'kepsek'],
         'users' => ['admin'],
     ];
     $u = user();
