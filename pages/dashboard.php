@@ -120,8 +120,8 @@ echo context_bar();
       <tbody>
       <?php for ($k = 1; $k <= 6; $k++):
           $sk = (int) scalar("SELECT COUNT(*) FROM siswa WHERE status='aktif' AND kelas=?" . scope_user(), [$k]);
-          $nf = (int) scalar('SELECT COUNT(*) FROM nilai_formatif nf JOIN siswa s ON s.id = nf.siswa_id WHERE nf.kelas=?' . scope_user('s.user_id'), [$k]);
-          $ns = (int) scalar('SELECT COUNT(*) FROM nilai_sumatif ns JOIN sumatif_jenis sj ON sj.id = ns.jenis_id WHERE ns.kelas=?' . scope_user('sj.user_id'), [$k]);
+          $nf = (int) scalar('SELECT COUNT(*) FROM nilai_formatif nf JOIN siswa s ON s.id = nf.siswa_id WHERE s.kelas=?' . scope_user('s.user_id'), [$k]);
+          $ns = (int) scalar('SELECT COUNT(*) FROM nilai_sumatif ns JOIN sumatif_jenis sj ON sj.id = ns.jenis_id JOIN siswa s ON s.id = ns.siswa_id WHERE s.kelas=?' . scope_user('sj.user_id'), [$k]);
           $wk = walikelas($k, (int) $c['semester']);
           $aktif = $k === $kelas; ?>
         <tr<?= $aktif ? ' style="background:var(--brand-soft)"' : '' ?>>

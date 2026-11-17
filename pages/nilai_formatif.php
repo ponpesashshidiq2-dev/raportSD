@@ -160,8 +160,8 @@ echo context_bar();
   <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $c['kelas']) ?></div>
 <?php else:
   $existing = [];
-  foreach (all('SELECT tp_id, siswa_id, nilai FROM nilai_formatif WHERE mapel_id=? AND ta=? AND semester=? AND kelas=?',
-      [$mapelId, $c['ta'], $c['semester'], (int) $c['kelas']]) as $r) {
+  foreach (all('SELECT tp_id, siswa_id, nilai FROM nilai_formatif WHERE mapel_id=? AND ta=? AND semester=?',
+      [$mapelId, $c['ta'], $c['semester']]) as $r) {
       $existing[$r['tp_id'] . '_' . $r['siswa_id']] = $r['nilai'];
   }
   $jilidMap = [];

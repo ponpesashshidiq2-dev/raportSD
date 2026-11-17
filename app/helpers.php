@@ -455,18 +455,17 @@ function seq(string $ta, int $sem): int
 
 function avg_formatif(int $siswa, int $mapel, string $ta, int $sem, ?int $kelas = null): ?float
 {
-    $v = scalar('SELECT AVG(nilai) FROM nilai_formatif WHERE siswa_id=? AND mapel_id=? AND ta=? AND semester=? AND kelas=?',
-        [$siswa, $mapel, $ta, $sem, $kelas ?? (int) ctx()['kelas']]);
+    $v = scalar('SELECT AVG(nilai) FROM nilai_formatif WHERE siswa_id=? AND mapel_id=? AND ta=? AND semester=?',
+        [$siswa, $mapel, $ta, $sem]);
     return $v === null ? null : (float) $v;
 }
 
 function avg_sumatif(int $siswa, int $mapel, string $ta, int $sem, ?int $kelas = null): ?float
 {
-    $k = $kelas ?? (int) ctx()['kelas'];
     $ambil = fn(string $tipe) => scalar(
         'SELECT AVG(n.nilai) FROM nilai_sumatif n JOIN sumatif_jenis j ON j.id=n.jenis_id'
-        . ' WHERE n.siswa_id=? AND n.mapel_id=? AND n.ta=? AND n.semester=? AND n.kelas=? AND j.tipe=?',
-        [$siswa, $mapel, $ta, $sem, $k, $tipe]
+        . ' WHERE n.siswa_id=? AND n.mapel_id=? AND n.ta=? AND n.semester=? AND j.tipe=?',
+        [$siswa, $mapel, $ta, $sem, $tipe]
     );
     $l = $ambil('lingkup');
     $a = $ambil('aes');
@@ -568,9 +567,9 @@ function capaian_kompetensi(int $siswa, int $mapel, string $ta, int $sem, string
     $rows = all(
         'SELECT tp.id, tp.deskripsi, AVG(n.nilai) AS rata FROM nilai_formatif n
          JOIN tp ON tp.id = n.tp_id
-         WHERE n.siswa_id=? AND n.mapel_id=? AND n.ta=? AND n.semester=? AND n.kelas=?'
+         WHERE n.siswa_id=? AND n.mapel_id=? AND n.ta=? AND n.semester=?'
          . ' GROUP BY tp.id, tp.deskripsi ORDER BY rata ASC',
-        [$siswa, $mapel, $ta, $sem, $kelas ?? (int) ctx()['kelas']]
+        [$siswa, $mapel, $ta, $sem]
     );
     if (!$rows) {
         $cp = null;

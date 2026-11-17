@@ -185,16 +185,17 @@ echo context_bar();
 
 <?php else:
 
-  $siswas = all("SELECT id, nama, nisn FROM siswa WHERE " . scope_status((int) $c['kelas']) . " AND kelas=?" . scope_user() . " ORDER BY nama", [$c['kelas']]);
+  $siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE 1=1" . scope_user() . " ORDER BY kelas, nama");
   $kolom = mapel_raport($c['kelas']);
   $turun = 0; $naik = 0; $baru = 0; $bawahKKM = 0;
 
   if ($kolom && $siswas) {
       foreach ($kolom as $m) {
           foreach ($siswas as $s) {
-              $now = nilai_akhir((int) $s['id'], (int) $m['id'], $c['ta'], $c['semester']);
+              $ks = (int) $s['kelas'];
+              $now = nilai_akhir((int) $s['id'], (int) $m['id'], $c['ta'], $c['semester'], $ks);
               if ($now === null) continue;
-              $prev = nilai_sebelumnya((int) $s['id'], (int) $m['id'], $c['ta'], $c['semester']);
+              $prev = nilai_sebelumnya((int) $s['id'], (int) $m['id'], $c['ta'], $c['semester'], $ks);
               if ($prev === null) $baru++;
               elseif ($now < $prev) $turun++;
               else $naik++;
@@ -212,6 +213,7 @@ echo context_bar();
   </div>
 
   <div class="alert alert-info">
+    Menampilkan <b>seluruh siswa dari semua kelas</b> (kolom Kelas menunjukkan kelas masing-masing siswa).
     Setiap nilai raport dibandingkan dengan nilai siswa yang sama pada semester/kelas sebelumnya.
     Sel merah berarti nilai <b>turun</b> dan harus dinaikkan kembali.
   </div>
@@ -219,7 +221,7 @@ echo context_bar();
   <?php if (!$kolom): ?>
     <div class="card empty">Belum ada mata pelajaran dengan KKM untuk konteks kelas ini. Isi KKM pada tab <a href="index.php?page=mapel&tab=daftar">Daftar Mapel</a>.</div>
   <?php elseif (!$siswas): ?>
-    <div class="card empty">Belum ada siswa pada kelas <?= $c['kelas'] ?>. <a href="index.php?page=siswa">Tambah data siswa</a>.</div>
+    <div class="card empty">Belum ada siswa. <a href="index.php?page=siswa">Tambah data siswa</a>.</div>
   <?php else: ?>
   <div class="table-wrap">
     <table class="tbl">
@@ -227,6 +229,7 @@ echo context_bar();
         <tr>
           <th class="center" style="width:40px">No</th>
           <th>Nama Siswa</th>
+          <th class="center" style="width:60px">Kelas</th>
           <?php foreach ($kolom as $m): ?>
             <th class="center" title="<?= e($m['nama']) ?>"><?= e(mb_strimwidth($m['nama'], 0, 16, '…')) ?><div class="hint">KKM <?= (int) $m['kkm'] ?></div></th>
           <?php endforeach; ?>
@@ -237,13 +240,15 @@ echo context_bar();
         <tr>
           <td class="center"><?= $no ?></td>
           <td class="name-cell"><?= e($s['nama']) ?></td>
+          <td class="center"><?= (int) $s['kelas'] ?></td>
           <?php foreach ($kolom as $m):
-              $now = nilai_akhir((int) $s['id'], (int) $m['id'], $c['ta'], $c['semester']);
+              $ks = (int) $s['kelas'];
+              $now = nilai_akhir((int) $s['id'], (int) $m['id'], $c['ta'], $c['semester'], $ks);
               if ($now === null) {
                   echo '<td class="center muted">-</td>';
                   continue;
               }
-              $prev = nilai_sebelumnya((int) $s['id'], (int) $m['id'], $c['ta'], $c['semester']);
+              $prev = nilai_sebelumnya((int) $s['id'], (int) $m['id'], $c['ta'], $c['semester'], $ks);
               $turunnih = $prev !== null && $now < $prev;
               $kkm = $m['kkm'] !== null && $m['kkm'] !== '' ? (int) $m['kkm'] : null;
               $kls = $turunnih ? ' class="center naik"' : ' class="center"';
