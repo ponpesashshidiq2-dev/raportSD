@@ -17,10 +17,10 @@
     if (a && !window.confirm(a.getAttribute('data-confirm') || 'Lanjutkan?')) ev.preventDefault();
   });
 
-  var printBtn = document.getElementById('printBtn');
-  if (printBtn) {
-    printBtn.addEventListener('click', function () { window.print(); });
-  }
+  var printBtns = document.querySelectorAll('.js-print, #printBtn');
+  printBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () { window.print(); });
+  });
 
   document.querySelectorAll('[data-select-all]').forEach(function (box) {
     box.addEventListener('change', function () {

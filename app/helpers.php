@@ -32,6 +32,7 @@ function db(): PDO
         migrate_cp_user($pdo);
         migrate_profil_tambahan($pdo);
         migrate_tanggal_context($pdo);
+        migrate_kelas_nama($pdo);
     }
     return $pdo;
 }
@@ -654,4 +655,27 @@ function kkm_mapel(int $mapel): ?int
 function js_alert(string $msg): void
 {
     echo '<script>alert(' . json_encode($msg) . ');</script>';
+}
+
+function nama_kelas(int $k): string
+{
+    $v = scalar('SELECT nama FROM kelas_nama WHERE kelas=?', [$k]);
+    return trim((string) ($v ?? ''));
+}
+
+function kalimat_ananda(string $nama, string $teks): string
+{
+    $nama = trim($nama);
+    $teks = trim($teks);
+    if ($nama === '') {
+        return $teks;
+    }
+    if ($teks === '') {
+        return 'Ananda ' . $nama;
+    }
+    if (preg_match('/^ananda\b[[:space:]]*/iu', $teks, $m)) {
+        $sisa = trim(substr($teks, strlen($m[0])));
+        return 'Ananda ' . $nama . ($sisa !== '' ? ' ' . $sisa : '');
+    }
+    return 'Ananda ' . $nama . '. ' . $teks;
 }

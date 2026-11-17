@@ -136,16 +136,17 @@ $aesList = array_values(array_filter($jenisList, fn($j) => $j['tipe'] === 'aes')
 page_head('Input Nilai Sumatif', 'Atur jumlah kolom Lingkup Materi lalu isi nilainya; Asesmen Akhir Semester (Non-Tes & Tes) tersedia otomatis.', mode_switch());
 echo context_bar();
 ?>
-<form class="toolbar" method="get" action="index.php">
-  <input type="hidden" name="page" value="nilai_sumatif">
-  <label style="margin:0">Mata Pelajaran</label>
-  <select name="mapel" onchange="this.form.submit()">
+<div class="mapel-bar">
+  <span class="mapel-bar-label">Mata Pelajaran</span>
+  <div class="mapel-btns">
     <?php foreach ($mapelList as $m): ?>
-      <option value="<?= (int) $m['id'] ?>"<?= $mapelId === (int) $m['id'] ? ' selected' : '' ?>><?= e($m['nama']) ?></option>
+      <a class="mapel-btn<?= $mapelId === (int) $m['id'] ? ' on' : '' ?>" href="index.php?page=nilai_sumatif&mapel=<?= (int) $m['id'] ?>"><?= e($m['nama']) ?></a>
     <?php endforeach; ?>
-  </select>
+    <?php if (!$mapelList): ?><span class="muted" style="font-size:13px">Belum ada mata pelajaran untuk kelas ini.</span><?php endif; ?>
+  </div>
+  <span class="badge badge-blue">Kelas <?= $c['kelas'] ?> &middot; Semester <?= $c['semester'] ?></span>
   <span class="badge badge-gray"><?= count($lingkupList) ?> lingkup + <?= count($aesList) ?> AES</span>
-</form>
+</div>
 
 <?php if (!$mapel): ?>
   <div class="card empty">Belum ada mata pelajaran untuk kelas <?= $c['kelas'] ?>.</div>

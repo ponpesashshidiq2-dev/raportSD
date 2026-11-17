@@ -98,6 +98,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('profil');
     }
 
+    if ($aksi === 'nama_kelas' && can_edit()) {
+        db()->beginTransaction();
+        try {
+            for ($k = 1; $k <= 6; $k++) {
+                $nm = trim($_POST['nk_' . $k] ?? '');
+                if (one('SELECT kelas FROM kelas_nama WHERE kelas=?', [$k])) {
+                    update_row('kelas_nama', ['nama' => $nm], 'kelas=?', [$k]);
+                } else {
+                    insert_row('kelas_nama', ['kelas' => $k, 'nama' => $nm]);
+                }
+            }
+            db()->commit();
+        } catch (Throwable $exK) {
+            db()->rollBack();
+            flash_set('error', 'Gagal menyimpan nama kelas: ' . $exK->getMessage());
+            redirect('profil');
+        }
+        flash_set('success', 'Nama kelas tersimpan — tampil pada kolom Kelas di cetak raport.');
+        redirect('profil');
+    }
+
 }
 
 $disabled = is_admin() ? '' : ' disabled';
@@ -192,6 +213,30 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
         </div>
       </div>
       <div class="hint mb">Nilai Akhir raport = rata-rata nilai sumatif (rata Lingkup Materi &amp; rata AES) — nilai formatif dipakai untuk deskripsi capaian kompetensi.</div>
+    </div>
+  </div>
+</form>
+
+<form method="post" action="index.php?page=profil">
+  <?= csrf_field() ?>
+  <input type="hidden" name="aksi" value="nama_kelas">
+  <div class="card">
+    <h3>Nama Kelas (untuk Cetak Raport)</h3>
+    <?php if (!can_edit()): ?><div class="alert alert-warning">Hanya administrator dan wali kelas yang dapat mengubah data ini.</div><?php endif; ?>
+    <p class="muted" style="font-size:12.5px;margin:0 0 10px">Nama kelas tampil pada kolom <b>Kelas</b> di cetak raport, mis. <b>III (Ustman Bin Affan)</b>. Biarkan kosong jika hanya ingin menampilkan angka romawi (mis. <b>III</b>). Tersimpan terpisah untuk setiap kelas.</p>
+    <div class="save-bar save-bar-in"><button class="btn" type="submit"<?= $disabledEdit ?>>Simpan Nama Kelas</button><span class="hint">Tombol menempel di atas tabel.</span></div>
+    <div class="table-wrap">
+      <table class="tbl">
+        <thead><tr><th style="width:225px">Kelas</th><th>Nama Kelas</th></tr></thead>
+        <tbody>
+        <?php for ($k = 1; $k <= 6; $k++): $aktifNK = $k === (int) $c['kelas']; ?>
+          <tr<?= $aktifNK ? ' style="background:var(--brand-soft)"' : '' ?>>
+            <td class="center"><b><?= e(kelas_label($k)) ?></b><?= $aktifNK ? '<div class="hint">aktif</div>' : '' ?></td>
+            <td><input type="text" name="nk_<?= $k ?>" value="<?= e(nama_kelas($k)) ?>" placeholder="mis. Ustman Bin Affan"<?= $disabledEdit ?>></td>
+          </tr>
+        <?php endfor; ?>
+        </tbody>
+      </table>
     </div>
   </div>
 </form>

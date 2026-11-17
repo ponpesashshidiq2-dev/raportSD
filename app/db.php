@@ -42,6 +42,10 @@ CREATE TABLE tanggal_context (
   tanggal_biodata TEXT NOT NULL DEFAULT '',
   PRIMARY KEY (kelas, semester)
 );
+CREATE TABLE kelas_nama (
+  kelas INTEGER PRIMARY KEY,
+  nama TEXT NOT NULL DEFAULT ''
+);
 CREATE TABLE walikelas (
   kelas INTEGER NOT NULL,
   semester INTEGER NOT NULL DEFAULT 1,
@@ -109,6 +113,7 @@ CREATE TABLE siswa (
   wali_nama TEXT NOT NULL DEFAULT '',
   wali_kerja TEXT NOT NULL DEFAULT '',
   wali_alamat TEXT NOT NULL DEFAULT '',
+  asal_sekolah TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
 CREATE TABLE nilai_formatif (
@@ -355,7 +360,7 @@ function migrate_siswa_detail(PDO $pdo): void
         'kode_agama', 'agama', 'pendidikan_sebelumnya', 'tanggal_masuk',
         'ayah', 'ibu', 'kerja_ayah', 'kerja_ibu',
         'ortu_jalan', 'ortu_kelurahan', 'ortu_kecamatan', 'ortu_kota', 'ortu_provinsi',
-        'wali_nama', 'wali_kerja', 'wali_alamat',
+        'wali_nama', 'wali_kerja', 'wali_alamat', 'asal_sekolah',
     ];
     foreach ($add as $c) {
         if (!in_array($c, $cols, true)) {
@@ -388,6 +393,14 @@ function migrate_tanggal_context(PDO $pdo): void
       tanggal_rapor TEXT NOT NULL DEFAULT '',
       tanggal_biodata TEXT NOT NULL DEFAULT '',
       PRIMARY KEY (kelas, semester)
+    )");
+}
+
+function migrate_kelas_nama(PDO $pdo): void
+{
+    $pdo->exec("CREATE TABLE IF NOT EXISTS kelas_nama (
+      kelas INTEGER PRIMARY KEY,
+      nama TEXT NOT NULL DEFAULT ''
     )");
 }
 

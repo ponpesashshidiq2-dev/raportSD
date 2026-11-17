@@ -74,7 +74,8 @@ $fmt = static function ($n, int $d = 1): string {
     return $s;
 };
 
-page_head('Leger Nilai', 'Rekap nilai akhir seluruh mata pelajaran per siswa beserta rata-rata dan ranking pada konteks aktif.');
+page_head('Leger Nilai', 'Rekap nilai akhir seluruh mata pelajaran per siswa beserta rata-rata dan ranking pada konteks aktif.',
+    '<button class="btn js-print" type="button">Cetak / Simpan PDF</button>');
 echo context_bar();
 ?>
 <?php if (!$siswas): ?>

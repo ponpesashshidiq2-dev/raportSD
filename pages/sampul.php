@@ -30,7 +30,7 @@ $tglAman = function ($v): string {
 };
 
 page_head('Cetak Sampul Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] . ' - Semester ' . $c['semester'] . ' - TA ' . $c['ta'],
-    '<button class="btn" id="printBtn" type="button">Cetak / Simpan PDF</button>');
+    '<button class="btn js-print" type="button">Cetak / Simpan PDF</button>');
 if ($pilihanBasi): ?>
   <div class="alert alert-info">Pilihan siswa sebelumnya tidak berlaku pada kelas ini — menampilkan seluruh siswa kelas <?= (int) $kelas ?>.</div>
 <?php endif; ?>
@@ -42,7 +42,7 @@ if ($pilihanBasi): ?>
       <label class="check"><input type="checkbox" data-select-all="s" checked> Pilih semua (<?= count($semuaSiswa) ?> siswa)</label>
       <span class="spacer"></span>
       <button class="btn secondary" type="submit">Tampilkan Terpilih</button>
-      <button class="btn" type="button" id="printBtn">Cetak / Simpan PDF</button>
+      <button class="btn js-print" type="button">Cetak / Simpan PDF</button>
     </div>
     <div class="toolbar" style="margin:8px 0 0">
       <?php foreach ($semuaSiswa as $s):

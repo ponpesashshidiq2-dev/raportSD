@@ -115,14 +115,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 page_head('Input Nilai Formatif', 'Nilai setiap Tujuan Pembelajaran (TP) per siswa pada konteks aktif.', mode_switch());
 echo context_bar();
 ?>
+<div class="mapel-bar">
+  <span class="mapel-bar-label">Mata Pelajaran</span>
+  <div class="mapel-btns">
+    <?php foreach ($mapelList as $m): ?>
+      <a class="mapel-btn<?= $mapelId === (int) $m['id'] ? ' on' : '' ?>" href="index.php?page=nilai_formatif&mapel=<?= (int) $m['id'] ?>"><?= e($m['nama']) ?></a>
+    <?php endforeach; ?>
+    <?php if (!$mapelList): ?><span class="muted" style="font-size:13px">Belum ada mata pelajaran untuk kelas ini.</span><?php endif; ?>
+  </div>
+  <span class="badge badge-blue">Kelas <?= $c['kelas'] ?> &middot; Semester <?= $c['semester'] ?></span>
+</div>
 <form class="toolbar" method="get" action="index.php">
   <input type="hidden" name="page" value="nilai_formatif">
-  <label style="margin:0">Mata Pelajaran</label>
-  <select name="mapel" onchange="this.form.submit()">
-    <?php foreach ($mapelList as $m): ?>
-      <option value="<?= (int) $m['id'] ?>"<?= $mapelId === (int) $m['id'] ? ' selected' : '' ?>><?= e($m['nama']) ?></option>
-    <?php endforeach; ?>
-  </select>
+  <input type="hidden" name="mapel" value="<?= $mapelId ?>">
   <?php if ($isTahsin): ?>
   <label style="margin:0">Jilid</label>
   <select name="jilid" onchange="this.form.submit()">
@@ -138,7 +143,7 @@ echo context_bar();
       <option value="<?= (int) $t['id'] ?>"<?= $tpSel === (int) $t['id'] ? ' selected' : '' ?>><?= e($t['kode']) ?> - <?= e(mb_strimwidth($t['deskripsi'], 0, 46, '…')) ?></option>
     <?php endforeach; ?>
   </select>
-  <span class="badge badge-blue">Kelas <?= $c['kelas'] ?> - Semester <?= $c['semester'] ?><?= $isTahsin ? ' - Jilid ' . $jilidSel : '' ?></span>
+  <?php if ($isTahsin): ?><span class="badge badge-blue">Jilid <?= $jilidSel ?></span><?php endif; ?>
   <span class="badge badge-gray"><?= count($tps) ?> TP ditampilkan</span>
   <span class="hint"><?= $isTahsin
       ? 'Pemilih Jilid menentukan TP yang tampil (TP Tahsin mengikuti Jilid, bukan Kelas). Isi kolom Jilid tiap siswa pada tabel.'

@@ -125,6 +125,14 @@ table.tbl tbody tr:hover td[data-frozen]{background:#fbf8ef}
 
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .toolbar .spacer{flex:1}
+
+/* Pemilih mata pelajaran berbentuk deretan tombol (Nilai Formatif & Sumatif) */
+.mapel-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px;margin-bottom:14px}
+.mapel-bar-label{font-weight:700;font-size:13px;color:#4d4020;flex:none}
+.mapel-btns{display:flex;gap:8px;flex-wrap:wrap;flex:1;min-width:0}
+.mapel-btn{display:inline-block;border:1px solid var(--line);background:#fff;color:var(--ink);padding:6px 13px;border-radius:999px;font-size:13px;font-weight:600;transition:.15s;white-space:nowrap}
+.mapel-btn:hover{border-color:var(--brand);color:var(--brand-2);background:#fbf8ef}
+.mapel-btn.on{background:var(--brand);border-color:var(--brand);color:#fff;box-shadow:0 1px 3px rgba(161,98,7,.3)}
 .search{max-width:260px}
 .empty{padding:26px;text-align:center;color:var(--muted)}
 .muted{color:var(--muted)}
@@ -188,6 +196,9 @@ table.rp-tbl td.capai{font-size:12.5px}
   .rp-tbl thead,.rp-kehadiran thead{display:table-header-group}
   .rp-section-title,.rp-title,.rp-sub{page-break-after:avoid;break-after:avoid}
   a{color:#000;text-decoration:none}
+  .table-wrap{overflow:visible!important;max-height:none!important;border:none;box-shadow:none;background:#fff}
+  table.tbl{font-size:11.5px}
+  table.tbl th,table.tbl td{padding:5px 6px}
 }
 @media (max-width:900px){
   .sidebar{position:fixed;left:-260px;z-index:50;transition:.2s}
@@ -227,9 +238,9 @@ table.sp-table td.l{width:210px;font-weight:600}
 table.sp-table td.l.sub{padding-left:34px;font-weight:400}
 table.sp-table td.d{width:16px;text-align:center}
 table.sp-sekolah{max-width:640px;margin-left:0}
-.sp-bawah{display:flex;gap:44px;align-items:flex-end;margin-top:44px;page-break-inside:avoid}
+.sp-bawah{display:flex;gap:44px;align-items:flex-end;justify-content:space-between;margin-top:44px;page-break-inside:avoid}
 .sp-foto{width:110px;height:126px;border:1px solid #000;flex:none}
-.sp-ttd{font-size:14px;line-height:1.7}
+.sp-ttd{font-size:14px;line-height:1.7;margin-left:auto;text-align:left}
 .sp-tgl{margin-bottom:4px}
 .sp-kepsek{font-weight:600}
 .sp-sign{height:74px}

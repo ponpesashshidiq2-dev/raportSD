@@ -3,6 +3,7 @@ $c = ctx();
 $p = profil();
 $kelas = $c['kelas'];
 $kaKunci = kelas_angkatan();
+$namaKelasCetak = nama_kelas($kelas);
 
 $semuaSiswa = all("SELECT id, nama, nisn, alamat, ortu, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
 $terpilih = [];
@@ -22,7 +23,7 @@ $mapelList = mapel_raport($kelas);
 $walikelas = walikelas($kelas, (int) $c['semester']);
 
 page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] . ' - Semester ' . $c['semester'] . ' - TA ' . $c['ta'],
-    '<button class="btn" id="printBtn" type="button">Cetak / Simpan PDF</button>');
+    '<button class="btn js-print" type="button">Cetak / Simpan PDF</button>');
 if ($pilihanBasi): ?>
   <div class="alert alert-info">Pilihan siswa sebelumnya tidak berlaku pada kelas ini — menampilkan seluruh siswa kelas <?= (int) $kelas ?>.</div>
 <?php endif; ?>
@@ -34,7 +35,6 @@ if ($pilihanBasi): ?>
       <label class="check"><input type="checkbox" data-select-all="s" checked> Pilih semua (<?= count($semuaSiswa) ?> siswa)</label>
       <span class="spacer"></span>
       <button class="btn secondary" type="submit">Tampilkan Terpilih</button>
-      <button class="btn" type="button" id="printBtn">Cetak / Simpan PDF</button>
     </div>
     <div class="toolbar" style="margin:8px 0 0">
       <?php foreach ($semuaSiswa as $s):
@@ -104,7 +104,7 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
   <table class="rp-ident">
     <tr>
       <td class="lbl">Nama Murid</td><td class="dd">:</td><td class="val"><b><?= e($s['nama']) ?></b></td>
-      <td class="lbl lbl2">Kelas</td><td class="dd">:</td><td class="val"><?= e($romawi[$kelas] ?? $kelas) ?></td>
+      <td class="lbl lbl2">Kelas</td><td class="dd">:</td><td class="val"><?= e($romawi[$kelas] ?? $kelas) ?><?= $namaKelasCetak !== '' ? ' (' . e($namaKelasCetak) . ')' : '' ?></td>
     </tr>
     <tr>
       <td class="lbl">NISN</td><td class="dd">:</td><td class="val"><?= e($s['nisn']) ?></td>
@@ -161,8 +161,8 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
           $pEk = strtoupper(trim((string) $ek['predikat']));
           $kataEk = ['A' => 'sangat baik', 'B' => 'Baik', 'C' => 'Cukup', 'D' => 'Kurang'][$pEk]
               ?? ($pEk !== '' ? 'memperoleh predikat ' . e($ek['predikat']) : '');
-          $ketEk = 'Ananda ' . e($s['nama']) . ($kataEk !== '' ? ' ' . $kataEk : '')
-              . ($deskEk !== '' ? ' ' . e($deskEk) : '.'); ?>
+          $isiEk = trim($kataEk . ($deskEk !== '' ? ' ' . $deskEk : ''));
+          $ketEk = 'Ananda ' . e($s['nama']) . ($isiEk !== '' ? ' ' . $isiEk : '.'); ?>
         <tr><td class="no"><?= $ne ?></td><td><?= e($ek['nama']) ?></td><td><?= $ketEk ?></td></tr>
       <?php endforeach; ?>
     </tbody>
@@ -180,7 +180,7 @@ foreach (all('SELECT ekstra_id, deskripsi FROM ekstra_deskripsi WHERE ta=? AND s
     </div>
     <div class="rp-box">
       <div class="rp-box-title">Catatan Wali Kelas</div>
-      <div class="rp-box-body"><?= $catatanTeks !== '' ? nl2br(e($catatanTeks)) : '' ?></div>
+      <div class="rp-box-body"><?= $catatanTeks !== '' ? nl2br(e(kalimat_ananda($s['nama'], $catatanTeks))) : '' ?></div>
     </div>
   </div>
 
