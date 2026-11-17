@@ -114,6 +114,7 @@ CREATE TABLE siswa (
   wali_kerja TEXT NOT NULL DEFAULT '',
   wali_alamat TEXT NOT NULL DEFAULT '',
   asal_sekolah TEXT NOT NULL DEFAULT '',
+  sekolah_tujuan TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL DEFAULT (datetime('now','localtime'))
 );
 CREATE TABLE nilai_formatif (
@@ -360,7 +361,7 @@ function migrate_siswa_detail(PDO $pdo): void
         'kode_agama', 'agama', 'pendidikan_sebelumnya', 'tanggal_masuk',
         'ayah', 'ibu', 'kerja_ayah', 'kerja_ibu',
         'ortu_jalan', 'ortu_kelurahan', 'ortu_kecamatan', 'ortu_kota', 'ortu_provinsi',
-        'wali_nama', 'wali_kerja', 'wali_alamat', 'asal_sekolah',
+        'wali_nama', 'wali_kerja', 'wali_alamat', 'asal_sekolah', 'sekolah_tujuan',
     ];
     foreach ($add as $c) {
         if (!in_array($c, $cols, true)) {

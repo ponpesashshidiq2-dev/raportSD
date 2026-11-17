@@ -17,7 +17,12 @@ function daftar_agama(): array
 
 function daftar_pendidikan_sebelumnya(): array
 {
-    return ['TK', 'RA', 'PAUD', 'Kelompok Bermain', 'Taman Kanak-kanak', 'Nonformal', 'Lainnya'];
+    return [
+        'TK', 'RA', 'PAUD', 'Kelompok Bermain', 'Taman Kanak-kanak',
+        'SD Kelas 1', 'SD Kelas 2', 'SD Kelas 3', 'SD Kelas 4', 'SD Kelas 5',
+        'MI Kelas 1', 'MI Kelas 2', 'MI Kelas 3', 'MI Kelas 4', 'MI Kelas 5',
+        'Nonformal', 'Lainnya',
+    ];
 }
 
 function import_header_map(array $header): array
@@ -364,87 +369,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('siswa');
     }
 
-    if ($aksi === 'pindah_kelas') {
+    if ($aksi === 'pindah_sekolah') {
         $idP = (int) ($_POST['id'] ?? 0);
-        $tujuan = min(6, max(1, (int) ($_POST['kelas_tujuan'] ?? 0)));
         $sP = one('SELECT * FROM siswa WHERE id=?' . scope_user(), [$idP]);
         if (!$sP) {
             flash_set('error', 'Data siswa tidak ditemukan atau bukan milik Anda.');
             redirect('siswa');
         }
-        $asal = (int) $sP['kelas'];
-        if ($tujuan === $asal) {
-            flash_set('error', 'Siswa sudah berada di Kelas ' . $tujuan . ' — pilih kelas tujuan yang berbeda.');
-            redirect('siswa', ['fk' => $asal]);
+        if ((string) $sP['status'] !== 'aktif') {
+            flash_set('error', htmlspecialchars($sP['nama'], ENT_QUOTES, 'UTF-8') . ' sudah tidak berstatus aktif.');
+            redirect('siswa', ['fk' => (int) $sP['kelas']]);
         }
-        $taP = $c['ta'];
-        $semP = $c['semester'];
-        db()->beginTransaction();
-        try {
-            $rombelLama = trim((string) $sP['rombel']);
-            $dataS = ['kelas' => $tujuan];
-            if ($rombelLama === '' || preg_match('/^kelas\s*' . $asal . '$/iu', $rombelLama)) {
-                $dataS['rombel'] = 'Kelas ' . $tujuan;
-            }
-            update_row('siswa', $dataS, 'id=?', [$idP]);
-
-            foreach (['kehadiran', 'catatan_wali', 'nilai_ekstra', 'kokurikuler_nilai', 'kokurikuler_capaian'] as $tP) {
-                run("DELETE FROM $tP WHERE siswa_id=? AND ta=? AND semester=? AND kelas=?", [$idP, $taP, $semP, $tujuan]);
-                run("UPDATE $tP SET kelas=? WHERE siswa_id=? AND ta=? AND semester=? AND kelas=?",
-                    [$tujuan, $idP, $taP, $semP, $asal]);
-            }
-
-            if (fase_of($asal) === fase_of($tujuan)) {
-                $tpDipakai = [];
-                $barisF = all('SELECT n.id AS nid, tp.mapel_id, tp.kode, tp.jilid FROM nilai_formatif n
-                    JOIN tp ON tp.id=n.tp_id WHERE n.siswa_id=? AND n.ta=? AND n.semester=? AND n.kelas=?',
-                    [$idP, $taP, $semP, $asal]);
-                foreach ($barisF as $b) {
-                    $tpBaru = one('SELECT id FROM tp WHERE mapel_id=? AND kelas=? AND semester=? AND kode=? AND jilid=?',
-                        [(int) $b['mapel_id'], $tujuan, $semP, (string) $b['kode'], (int) $b['jilid']]);
-                    if (!$tpBaru || isset($tpDipakai[(int) $tpBaru['id']])) {
-                        continue;
-                    }
-                    $tpDipakai[(int) $tpBaru['id']] = true;
-                    run('DELETE FROM nilai_formatif WHERE siswa_id=? AND ta=? AND semester=? AND kelas=? AND tp_id=?',
-                        [$idP, $taP, $semP, $tujuan, (int) $tpBaru['id']]);
-                    run('UPDATE nilai_formatif SET tp_id=?, kelas=? WHERE id=?',
-                        [(int) $tpBaru['id'], $tujuan, (int) $b['nid']]);
-                }
-            }
-
-            $barisS = all('SELECT n.id AS nid, j.mapel_id, j.nama AS jnama, j.tipe, j.urutan, j.user_id
-                FROM nilai_sumatif n JOIN sumatif_jenis j ON j.id=n.jenis_id
-                WHERE n.siswa_id=? AND n.ta=? AND n.semester=? AND n.kelas=?',
-                [$idP, $taP, $semP, $asal]);
-            foreach ($barisS as $b) {
-                $jBaru = one('SELECT id FROM sumatif_jenis WHERE mapel_id=? AND kelas=? AND ta=? AND semester=? AND user_id=? AND nama=?',
-                    [(int) $b['mapel_id'], $tujuan, $taP, $semP, (int) $b['user_id'], (string) $b['jnama']]);
-                if (!$jBaru) {
-                    insert_row('sumatif_jenis', [
-                        'mapel_id' => (int) $b['mapel_id'], 'ta' => $taP, 'semester' => $semP,
-                        'kelas' => $tujuan, 'user_id' => (int) $b['user_id'], 'tipe' => (string) $b['tipe'],
-                        'urutan' => (int) $b['urutan'], 'nama' => (string) $b['jnama'], 'tanggal' => '',
-                    ]);
-                    $jBaru = ['id' => (int) db()->lastInsertId()];
-                }
-                run('DELETE FROM nilai_sumatif WHERE siswa_id=? AND ta=? AND semester=? AND kelas=? AND jenis_id=?',
-                    [$idP, $taP, $semP, $tujuan, (int) $jBaru['id']]);
-                run('UPDATE nilai_sumatif SET jenis_id=?, kelas=? WHERE id=?',
-                    [(int) $jBaru['id'], $tujuan, (int) $b['nid']]);
-            }
-
-            db()->commit();
-        } catch (Throwable $exP) {
-            db()->rollBack();
-            flash_set('error', 'Gagal memindahkan kelas: ' . $exP->getMessage());
-            redirect('siswa');
-        }
+        $sekolahTujuan = trim((string) ($_POST['sekolah_tujuan'] ?? ''));
+        update_row('siswa', ['status' => 'pindah', 'sekolah_tujuan' => $sekolahTujuan], 'id=?', [$idP]);
         flash_set('success', htmlspecialchars($sP['nama'], ENT_QUOTES, 'UTF-8')
-            . ' dipindahkan dari Kelas ' . $asal . ' ke Kelas ' . $tujuan
-            . ' — nilai sumatif, kehadiran, ekstrakurikuler, dan catatan semester berjalan ikut dipindah'
-            . ' (nilai formatif ikut bila Tujuan Pembelajaran kelas tujuan memakai kode yang sama).');
-        redirect('siswa', ['fk' => $tujuan]);
+            . ' ditandai pindah sekolah' . ($sekolahTujuan !== '' ? ' ke ' . htmlspecialchars($sekolahTujuan, ENT_QUOTES, 'UTF-8') : '')
+            . ' — seluruh nilai lama tetap tersimpan di Kelas ' . (int) $sP['kelas']
+            . ', tidak ada data sama sekali pada kelas setelahnya, dan siswa tidak lagi tampil pada input nilai, leger, maupun cetak raport.');
+        redirect('siswa', ['fk' => (int) $sP['kelas']]);
     }
 
     if ($aksi === 'terima_pindahan') {
@@ -615,6 +557,7 @@ if (isset($_GET['act']) && $_GET['act'] === 'export' && user()) {
 
 $q = trim($_GET['q'] ?? '');
 $filterKelas = (int) ($_GET['fk'] ?? 0);
+$filterStatus = (string) ($_GET['fs'] ?? '');
 $sql = 'SELECT * FROM siswa WHERE 1=1' . scope_user();
 $args = [];
 if ($q !== '') {
@@ -626,8 +569,13 @@ if ($filterKelas >= 1 && $filterKelas <= 6) {
     $sql .= ' AND kelas=?';
     $args[] = $filterKelas;
 }
+if (in_array($filterStatus, ['aktif', 'pindah', 'lulus'], true)) {
+    $sql .= ' AND status=?';
+    $args[] = $filterStatus;
+}
 $sql .= ' ORDER BY kelas, nama';
 $siswas = all($sql, $args);
+$siswaAktif = all("SELECT id, nama, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
 $edit = null;
 if (!empty($_GET['edit'])) {
     $edit = one('SELECT * FROM siswa WHERE id=?' . scope_user(), [(int) $_GET['edit']]);
@@ -763,31 +711,27 @@ page_head('Data Siswa', 'Kelola data peserta didik — seluruh siswa akun ini ta
 <?php endif; ?>
 
 <div class="grid grid-2">
-  <form class="card" method="post" action="index.php?page=siswa" id="pindah-kelas">
+  <form class="card" method="post" action="index.php?page=siswa" id="pindah-sekolah">
     <?= csrf_field() ?>
-    <input type="hidden" name="aksi" value="pindah_kelas">
-    <h3>Pindah Kelas</h3>
+    <input type="hidden" name="aksi" value="pindah_sekolah">
+    <h3>Pindah Sekolah</h3>
     <div class="form-row">
       <div class="field" style="grid-column:1/-1">
         <label>Siswa</label>
         <select name="id" required>
           <option value="">- pilih siswa -</option>
-          <?php foreach ($siswas as $sp): ?>
+          <?php foreach ($siswaAktif as $sp): ?>
             <option value="<?= (int) $sp['id'] ?>"><?= e($sp['nama']) ?> (Kelas <?= (int) $sp['kelas'] ?>)</option>
           <?php endforeach; ?>
         </select>
       </div>
-      <div class="field">
-        <label>Kelas Tujuan</label>
-        <select name="kelas_tujuan">
-          <?php for ($kP = 1; $kP <= 6; $kP++): ?>
-            <option value="<?= $kP ?>"<?= $kP === (int) $c['kelas'] ? ' selected' : '' ?>>Kelas <?= $kP ?></option>
-          <?php endfor; ?>
-        </select>
+      <div class="field" style="grid-column:1/-1">
+        <label>Sekolah Tujuan (opsional)</label>
+        <input type="text" name="sekolah_tujuan" placeholder="mis. SD Muhammadiyah 2 Ngawen">
       </div>
     </div>
-    <button class="btn" type="submit" data-confirm="Pindahkan siswa ke kelas tujuan? Nilai semester berjalan ikut dipindah.">Pindahkan Kelas</button>
-    <span class="hint">Memindahkan satu siswa ke kelas lain: nilai sumatif, kehadiran, ekstrakurikuler, dan catatan pada semester &amp; tahun ajaran konteks ikut dipindah; nilai formatif ikut bila Tujuan Pembelajaran kelas tujuan memakai kode TP yang sama.</span>
+    <button class="btn" type="submit" data-confirm="Tandai siswa pindah sekolah? Seluruh nilai lama tetap tersimpan di kelasnya dan siswa tidak lagi tampil pada input nilai.">Tandai Pindah Sekolah</button>
+    <span class="hint">Siswa berstatus Pindah: data nilai lama tetap di kelas asal, tidak ada data sama sekali pada kelas setelahnya, dan ia tidak lagi muncul di input nilai, leger, sampul, maupun cetak raport. Untuk menerima siswa dari SD lain, pakai kartu Terima Siswa Pindahan.</span>
   </form>
 
   <form class="card" method="post" action="index.php?page=siswa" id="siswa-pindahan">
@@ -803,7 +747,7 @@ page_head('Data Siswa', 'Kelola data peserta didik — seluruh siswa akun ini ta
         <select name="jk"><option value="L">Laki-laki</option><option value="P">Perempuan</option></select>
       </div>
       <div class="field">
-        <label>Kelas Tujuan</label>
+        <label>Masuk di Kelas</label>
         <select name="kelas_tujuan">
           <?php for ($kP = 1; $kP <= 6; $kP++): ?>
             <option value="<?= $kP ?>"<?= $kP === (int) $c['kelas'] ? ' selected' : '' ?>>Kelas <?= $kP ?></option>
@@ -829,7 +773,7 @@ page_head('Data Siswa', 'Kelola data peserta didik — seluruh siswa akun ini ta
       <div class="field"><label>Rombel</label><input type="text" name="rombel" placeholder="otomatis: Kelas tujuan"></div>
     </div>
     <button class="btn" type="submit">Terima Siswa Pindahan</button>
-    <span class="hint">Siswa dari sekolah lain langsung terdaftar dengan status Aktif pada kelas tujuan dan ditandai sebagai pindahan.</span>
+    <span class="hint">Siswa pindahan <b>dari SD lain</b> langsung terdaftar Aktif pada kelas pilihan — <b>data kelas sebelumnya tidak ada</b> (memang belum pernah ada di sistem ini) sehingga penilaian dimulai dari kelas tersebut. Isi Pendidikan Sebelumnya dengan jenjang terakhir yang ditempuh, mis. <b>SD Kelas 2</b> bila masuk Kelas 3.</span>
   </form>
 </div>
 
@@ -885,8 +829,14 @@ page_head('Data Siswa', 'Kelola data peserta didik — seluruh siswa akun ini ta
       <option value="<?= $k ?>"<?= $filterKelas === $k ? ' selected' : '' ?>>Kelas <?= $k ?></option>
     <?php endfor; ?>
   </select>
+  <select name="fs">
+    <option value="">Semua Status</option>
+    <?php foreach (['aktif' => 'Aktif', 'pindah' => 'Pindah', 'lulus' => 'Lulus'] as $vS => $lS): ?>
+      <option value="<?= $vS ?>"<?= $filterStatus === $vS ? ' selected' : '' ?>><?= $lS ?></option>
+    <?php endforeach; ?>
+  </select>
   <button class="btn secondary" type="submit">Cari</button>
-  <span class="hint">Filter kelas bersifat opsional — tanpa pilihan, seluruh siswa akun ini tampil.</span>
+  <span class="hint">Filter kelas &amp; status bersifat opsional — tanpa pilihan, seluruh siswa akun ini tampil.</span>
 </form>
 
 <div class="table-wrap">
@@ -910,7 +860,7 @@ page_head('Data Siswa', 'Kelola data peserta didik — seluruh siswa akun ini ta
         <td class="center"><?= e($s['jk']) ?></td>
         <td class="center"><?= (int) $s['kelas'] ?></td>
         <td><?= e($s['ortu']) ?></td>
-        <td><span class="badge <?= $s['status'] === 'aktif' ? 'badge-green' : 'badge-gray' ?>"><?= e($s['status']) ?></span><?php if (trim((string) $s['asal_sekolah']) !== ''): ?> <span class="badge badge-blue" title="Siswa pindahan dari <?= e($s['asal_sekolah']) ?>">pindahan</span><?php endif; ?></td>
+        <td><span class="badge <?= $s['status'] === 'aktif' ? 'badge-green' : ($s['status'] === 'pindah' ? 'badge-red' : 'badge-gray') ?>"><?= e($s['status']) ?></span><?php if ($s['status'] === 'pindah' && trim((string) $s['sekolah_tujuan']) !== ''): ?> <span class="badge badge-blue" title="Pindah sekolah ke <?= e($s['sekolah_tujuan']) ?>">→ <?= e($s['sekolah_tujuan']) ?></span><?php endif; ?><?php if (trim((string) $s['asal_sekolah']) !== ''): ?> <span class="badge badge-blue" title="Siswa pindahan dari <?= e($s['asal_sekolah']) ?>">pindahan</span><?php endif; ?></td>
         <td class="center">
           <a class="btn sm secondary" href="index.php?page=siswa&edit=<?= (int) $s['id'] ?>">Ubah</a>
           <?php if (can_edit()): ?>
