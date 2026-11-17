@@ -391,6 +391,22 @@ function naik_kelas_otomatis(): void
     flash_set('success', 'Tahun ajaran ' . $ta . ' terdeteksi — ' . $n . ' siswa otomatis dinaikkan satu tingkat kelas.');
 }
 
+function mutasi_kelas_siswa(int $baru): int
+{
+    if ($baru < 1 || $baru > 6) {
+        return 0;
+    }
+    $n = (int) run("UPDATE siswa SET kelas=$baru WHERE status='aktif' AND kelas<>" . $baru . scope_user());
+    if ($n > 0) {
+        $start = (int) substr(ta_oto(), 0, 4);
+        $last = (int) substr((string) (profil()['ta_promosi'] ?? ''), 0, 4);
+        if ($start >= 2000 && $start > $last) {
+            update_row('profil', ['ta_promosi' => (string) $start], 'id=?', [1]);
+        }
+    }
+    return $n;
+}
+
 function angkatan_lock_alert(): string
 {
     $ka = kelas_angkatan();

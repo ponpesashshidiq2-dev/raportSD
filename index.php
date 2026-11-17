@@ -30,6 +30,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         $old = (int) profil()['kelas_aktif'];
         $oldS = (int) profil()['semester'];
         update_row('profil', ['kelas_aktif' => $k, 'fase' => fase_of($k), 'semester' => $s], 'id=?', [1]);
+        $nMutasi = $old !== $k ? mutasi_kelas_siswa($k) : 0;
         $back = $_POST['kembali'] ?? 'dashboard';
         if (!is_string($back) || !preg_match('/^[a-z_]+$/', $back) || !menu_allowed($back)) {
             $back = 'dashboard';
@@ -44,7 +45,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
         if (!$ubah) {
             flash_set('success', 'Sudah berada di Kelas ' . $k . ' Semester ' . $s . '. Seluruh data kelas tetap tersimpan dan dapat dibuka kembali kapan saja.');
         } else {
-            flash_set('success', 'Konteks dipindah ke ' . implode(' dan ', $ubah) . '. Data kelas sebelumnya (siswa, nilai, raport) tetap tersimpan dan dapat dibuka kembali kapan saja.');
+            $pesan = 'Konteks dipindah ke ' . implode(' dan ', $ubah) . '.';
+            $pesan .= $nMutasi > 0
+                ? ' ' . $nMutasi . ' siswa aktif otomatis dipindahkan ke Kelas ' . $k . ' — nilai, raport, dan data lain tetap tersimpan.'
+                : ' Data kelas sebelumnya (siswa, nilai, raport) tetap tersimpan dan dapat dibuka kembali kapan saja.';
+            flash_set('success', $pesan);
         }
         redirect($back);
     }

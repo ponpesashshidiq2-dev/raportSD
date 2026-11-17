@@ -33,10 +33,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $lamaR = tanggal_rapor_ctx((int) $c['kelas'], (int) $c['semester']);
         $lamaB = tanggal_biodata_ctx((int) $c['kelas'], (int) $c['semester']);
         update_row('profil', $konteks, 'id=?', [1]);
+        $nMutasi = (int) $c['kelas'] !== (int) $konteks['kelas_aktif'] ? mutasi_kelas_siswa((int) $konteks['kelas_aktif']) : 0;
         if ($tglR !== $lamaR || $tglB !== $lamaB) {
             tanggal_ctx_set((int) $konteks['kelas_aktif'], (int) $konteks['semester'], $tglR, $tglB);
         }
-        flash_set('success', 'Profil dan konteks raport tersimpan.');
+        flash_set('success', 'Profil dan konteks raport tersimpan.'
+            . ($nMutasi > 0 ? ' ' . $nMutasi . ' siswa aktif otomatis dipindahkan ke Kelas ' . (int) $konteks['kelas_aktif'] . '.' : ''));
         redirect('profil');
     }
 
