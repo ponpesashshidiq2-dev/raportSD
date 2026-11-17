@@ -78,23 +78,36 @@ page_head('Leger Nilai', 'Rekap nilai akhir seluruh mata pelajaran per siswa bes
     '<button class="btn js-print" type="button">Cetak / Simpan PDF</button>');
 echo context_bar();
 ?>
+<style>
+@page{size:A4 landscape;margin:8mm}
+table.tbl-leger{table-layout:fixed;width:100%;min-width:960px}
+table.tbl-leger th{overflow-wrap:anywhere;word-break:break-word;line-height:1.35}
+table.tbl-leger td{overflow-wrap:break-word}
+@media print{
+  table.tbl-leger{min-width:0;font-size:9.5px}
+  table.tbl-leger th,table.tbl-leger td{padding:3px 4px}
+  table.tbl-leger thead th{font-size:8.5px;letter-spacing:.2px}
+  table.tbl-leger thead{display:table-header-group}
+  table.tbl-leger td[data-frozen],table.tbl-leger th[data-frozen]{position:static!important;box-shadow:none!important}
+}
+</style>
 <?php if (!$siswas): ?>
   <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $c['kelas']) ?></div>
 <?php elseif (!$mapelList): ?>
   <div class="card empty">Belum ada mata pelajaran untuk kelas <?= (int) $c['kelas'] ?>. Tambahkan pada menu <a href="index.php?page=mapel">Mata Pelajaran</a>.</div>
 <?php else: ?>
 <div class="table-wrap">
-  <table class="tbl">
+  <table class="tbl tbl-leger">
     <caption>Nilai akhir = rata-rata nilai sumatif (rata Lingkup Materi &amp; rata AES) &middot; <?= e($c['ta']) ?> Semester <?= (int) $c['semester'] ?> &middot; sel di bawah KKM ditandai merah</caption>
     <thead>
       <tr>
-        <th class="center" style="width:40px" data-frozen="no">No</th>
-        <th data-frozen="nama">Nama</th>
+        <th class="center" style="width:3.5%" data-frozen="no">No</th>
+        <th data-frozen="nama" style="width:17%">Nama</th>
         <?php foreach ($mapelList as $m): $mid = (int) $m['id']; ?>
         <th class="center"><?= e($m['nama']) ?><div class="hint">KKM <?= $kkmMap[$mid] !== null ? (int) $kkmMap[$mid] : '-' ?></div></th>
         <?php endforeach; ?>
-        <th class="center">Rata-rata</th>
-        <th class="center">Ranking</th>
+        <th class="center" style="width:6%">Rata-rata</th>
+        <th class="center" style="width:5%">Ranking</th>
       </tr>
     </thead>
     <tbody>

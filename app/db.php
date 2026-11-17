@@ -403,6 +403,13 @@ function migrate_kelas_nama(PDO $pdo): void
       kelas INTEGER PRIMARY KEY,
       nama TEXT NOT NULL DEFAULT ''
     )");
+    if (function_exists('kelas_sahabat')
+        && (int) $pdo->query('SELECT COUNT(*) FROM kelas_nama')->fetchColumn() === 0) {
+        $st = $pdo->prepare('INSERT INTO kelas_nama (kelas, nama) VALUES (?, ?)');
+        for ($k = 1; $k <= 6; $k++) {
+            $st->execute([$k, kelas_sahabat($k)]);
+        }
+    }
 }
 
 function migrate_catatan_wali(PDO $pdo): void
