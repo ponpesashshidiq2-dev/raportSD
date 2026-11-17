@@ -185,7 +185,8 @@ echo context_bar();
 
 <?php else:
 
-  $siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE 1=1" . scope_user() . " ORDER BY kelas, nama");
+  $kaKunci = kelas_angkatan();
+  $siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE " . scope_status((int) $c['kelas']) . scope_user() . " ORDER BY kelas, nama");
   $kolom = mapel_raport($c['kelas']);
   $turun = 0; $naik = 0; $baru = 0; $bawahKKM = 0;
 
@@ -213,7 +214,7 @@ echo context_bar();
   </div>
 
   <div class="alert alert-info">
-    Menampilkan <b>seluruh siswa dari semua kelas</b> (kolom Kelas menunjukkan kelas masing-masing siswa).
+    Menampilkan siswa <b>kelas konteks</b> beserta siswa <b>pindah</b> pada kelas asalnya — aturan yang sama dengan halaman Cetak Raport, Leger, dan input nilai.
     Setiap nilai raport dibandingkan dengan nilai siswa yang sama pada semester/kelas sebelumnya.
     Sel merah berarti nilai <b>turun</b> dan harus dinaikkan kembali.
   </div>
@@ -221,7 +222,7 @@ echo context_bar();
   <?php if (!$kolom): ?>
     <div class="card empty">Belum ada mata pelajaran dengan KKM untuk konteks kelas ini. Isi KKM pada tab <a href="index.php?page=mapel&tab=daftar">Daftar Mapel</a>.</div>
   <?php elseif (!$siswas): ?>
-    <div class="card empty">Belum ada siswa. <a href="index.php?page=siswa">Tambah data siswa</a>.</div>
+    <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $c['kelas']) ?></div>
   <?php else: ?>
   <div class="table-wrap">
     <table class="tbl">
