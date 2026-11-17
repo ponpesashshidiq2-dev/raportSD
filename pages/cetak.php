@@ -27,7 +27,6 @@ page_head('Cetak Raport', 'Konteks: Kelas ' . $kelas . ' - Fase ' . $c['fase'] .
 if ($pilihanBasi): ?>
   <div class="alert alert-info">Pilihan siswa sebelumnya tidak berlaku pada kelas ini — menampilkan seluruh siswa kelas <?= (int) $kelas ?>.</div>
 <?php endif; ?>
-?>
 <div class="raport-tools no-print">
   <form method="get" action="index.php" class="card" style="margin:0;padding:12px 14px;width:100%">
     <input type="hidden" name="page" value="cetak">
