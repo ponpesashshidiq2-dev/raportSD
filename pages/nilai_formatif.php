@@ -20,7 +20,7 @@ if ($tpSel && !array_filter($allTps, fn($t) => (int) $t['id'] === $tpSel)) {
     $tpSel = 0;
 }
 $tps = $tpSel ? array_values(array_filter($allTps, fn($t) => (int) $t['id'] === $tpSel)) : $allTps;
-$siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
+$siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE " . scope_status((int) $c['kelas']) . scope_user() . " ORDER BY kelas, nama");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!can_edit()) {
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash_set('error', 'Mata pelajaran tidak valid.');
         redirect('nilai_formatif');
     }
-    $siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
+    $siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE " . scope_status((int) $c['kelas']) . scope_user() . " ORDER BY kelas, nama");
     $tpList = array_column(all('SELECT * FROM tp WHERE mapel_id=? AND kelas=? AND jilid=? AND semester=?',
         [$mapelId, $isTahsin ? 0 : $c['kelas'], $isTahsin ? $jilidFilter : 0, $c['semester']]), null, 'id');
     $siswaList = array_column($siswas, null, 'id');

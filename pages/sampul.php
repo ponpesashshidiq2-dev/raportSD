@@ -4,7 +4,7 @@ $p = profil();
 $kelas = $c['kelas'];
 $kaKunci = kelas_angkatan();
 
-$semuaSiswa = all("SELECT * FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
+$semuaSiswa = all("SELECT * FROM siswa WHERE " . scope_status((int) $c['kelas']) . scope_user() . " ORDER BY kelas, nama");
 $terpilih = [];
 $pilihanBasi = false;
 if (isset($_GET['s'])) {

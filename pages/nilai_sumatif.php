@@ -11,7 +11,7 @@ if (!$mapel && $mapelList) {
     $mapelId = 0;
 }
 $uidDomain = (int) (user()['id'] ?? 0);
-$siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
+$siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE " . scope_status((int) $c['kelas']) . scope_user() . " ORDER BY kelas, nama");
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!can_edit()) {
@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash_set('error', 'Mata pelajaran tidak valid.');
         redirect('nilai_sumatif');
     }
-    $siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
+    $siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE " . scope_status((int) $c['kelas']) . scope_user() . " ORDER BY kelas, nama");
 
     if ($aksi === 'jumlah_terapkan') {
         $jumlah = (int) ($_POST['jumlah'] ?? -1);

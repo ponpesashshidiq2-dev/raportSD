@@ -1,7 +1,7 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-$siswas = all("SELECT id, nama, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
+$siswas = all("SELECT id, nama, kelas FROM siswa WHERE " . scope_status((int) $c['kelas']) . scope_user() . " ORDER BY kelas, nama");
 $dimensi = dimensi_kokurikuler();
 $ops = predikat_kokurikuler_ops();
 

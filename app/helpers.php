@@ -182,6 +182,14 @@ function scope_user(string $kolom = 'user_id'): string
     return ' AND ' . $kolom . '=' . (int) $u['id'];
 }
 
+function scope_status(int $kelas): string
+{
+    if ($kelas >= 1 && $kelas <= 6) {
+        return "(status='aktif' OR (status='pindah' AND kelas=$kelas))";
+    }
+    return "status='aktif'";
+}
+
 function role_label(string $r): string
 {
     return ['admin' => 'Administrator', 'wali' => 'Wali Kelas', 'kepsek' => 'Kepala Sekolah'][$r] ?? $r;
@@ -677,5 +685,5 @@ function kalimat_ananda(string $nama, string $teks): string
         $sisa = trim(substr($teks, strlen($m[0])));
         return 'Ananda ' . $nama . ($sisa !== '' ? ' ' . $sisa : '');
     }
-    return 'Ananda ' . $nama . '. ' . $teks;
+    return 'Ananda ' . $nama . ' ' . $teks;
 }

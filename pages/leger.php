@@ -1,7 +1,7 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-$siswas = all("SELECT id, nama, nis, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
+$siswas = all("SELECT id, nama, nis, kelas FROM siswa WHERE " . scope_status((int) $c['kelas']) . scope_user() . " ORDER BY kelas, nama");
 $mapelList = mapel_kelas($c['kelas']);
 
 $nilaiMap = [];
@@ -83,7 +83,13 @@ echo context_bar();
 table.tbl-leger{table-layout:fixed;width:100%;min-width:960px}
 table.tbl-leger th{overflow-wrap:anywhere;word-break:break-word;line-height:1.35}
 table.tbl-leger td{overflow-wrap:break-word}
+.leger-head{text-align:center;margin:0 0 8px}
+.leger-title{font-size:15px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#2a2008}
+.leger-school{font-size:13px;font-weight:600;color:#7a6b45;margin-top:2px}
 @media print{
+  .leger-head{margin:0 0 6px}
+  .leger-title{font-size:14px}
+  .leger-school{font-size:11.5px}
   table.tbl-leger{min-width:0;font-size:9.5px}
   table.tbl-leger th,table.tbl-leger td{padding:3px 4px}
   table.tbl-leger thead th{font-size:8.5px;letter-spacing:.2px}
@@ -95,7 +101,13 @@ table.tbl-leger td{overflow-wrap:break-word}
   <div class="card empty"><?= teks_kosong_siswa($kaKunci, (int) $c['kelas']) ?></div>
 <?php elseif (!$mapelList): ?>
   <div class="card empty">Belum ada mata pelajaran untuk kelas <?= (int) $c['kelas'] ?>. Tambahkan pada menu <a href="index.php?page=mapel">Mata Pelajaran</a>.</div>
-<?php else: ?>
+<?php else:
+$namaSekolahLeger = trim((string) (profil()['sekolah'] ?? ''));
+?>
+<div class="leger-head">
+  <div class="leger-title">LEGER NILAI KELAS <?= (int) $c['kelas'] ?></div>
+  <?php if ($namaSekolahLeger !== ''): ?><div class="leger-school"><?= e($namaSekolahLeger) ?></div><?php endif; ?>
+</div>
 <div class="table-wrap">
   <table class="tbl tbl-leger">
     <caption>Nilai akhir = rata-rata nilai sumatif (rata Lingkup Materi &amp; rata AES) &middot; <?= e($c['ta']) ?> Semester <?= (int) $c['semester'] ?> &middot; sel di bawah KKM ditandai merah</caption>

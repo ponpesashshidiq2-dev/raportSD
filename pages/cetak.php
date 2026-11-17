@@ -5,7 +5,7 @@ $kelas = $c['kelas'];
 $kaKunci = kelas_angkatan();
 $namaKelasCetak = nama_kelas($kelas);
 
-$semuaSiswa = all("SELECT id, nama, nisn, alamat, ortu, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
+$semuaSiswa = all("SELECT id, nama, nisn, alamat, ortu, kelas FROM siswa WHERE " . scope_status((int) $c['kelas']) . scope_user() . " ORDER BY kelas, nama");
 $terpilih = [];
 $pilihanBasi = false;
 if (isset($_GET['s'])) {

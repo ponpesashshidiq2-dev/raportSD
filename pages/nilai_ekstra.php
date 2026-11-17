@@ -1,7 +1,7 @@
 <?php
 $c = ctx();
 $kaKunci = kelas_angkatan();
-$siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE status='aktif'" . scope_user() . " ORDER BY kelas, nama");
+$siswas = all("SELECT id, nama, nisn, kelas FROM siswa WHERE " . scope_status((int) $c['kelas']) . scope_user() . " ORDER BY kelas, nama");
 $ekstraList = all('SELECT * FROM ekstra WHERE 1=1' . scope_user() . ' ORDER BY urutan, nama');
 $predikatOps = ['' => '-', 'A' => 'A (Sangat Baik)', 'B' => 'B (Baik)', 'C' => 'C (Cukup)', 'D' => 'D (Kurang)'];
 

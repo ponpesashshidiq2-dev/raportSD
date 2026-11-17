@@ -185,7 +185,7 @@ echo context_bar();
 
 <?php else:
 
-  $siswas = all("SELECT id, nama, nisn FROM siswa WHERE status='aktif' AND kelas=?" . scope_user() . " ORDER BY nama", [$c['kelas']]);
+  $siswas = all("SELECT id, nama, nisn FROM siswa WHERE " . scope_status((int) $c['kelas']) . " AND kelas=?" . scope_user() . " ORDER BY nama", [$c['kelas']]);
   $kolom = mapel_raport($c['kelas']);
   $turun = 0; $naik = 0; $baru = 0; $bawahKKM = 0;
 
