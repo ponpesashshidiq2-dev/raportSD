@@ -54,6 +54,8 @@ function render_layout(string $content, string $title, string $page): string
     $p = profil();
     $items = menu_items();
     $flashes = flash_pop();
+    $logoFile = basename(trim((string) ($p['logo'] ?? '')));
+    $logoUrl = $logoFile !== '' && is_file(DATA_DIR . '/' . $logoFile) ? 'data/' . $logoFile : '';
     ob_start();
     ?>
     <!DOCTYPE html>
@@ -65,10 +67,18 @@ function render_layout(string $content, string $title, string $page): string
     <link rel="stylesheet" href="assets/style.css">
     </head>
     <body>
+    <?php if ($logoUrl !== ''): ?>
+      <div class="logo-tile" style="background-image:url('<?= e($logoUrl) ?>')"></div>
+      <img class="logo-corner" src="<?= e($logoUrl) ?>" alt="Logo sekolah">
+    <?php endif; ?>
     <div class="app">
       <aside class="sidebar" id="sidebar">
         <div class="brand">
-          <div class="brand-mark">R</div>
+          <?php if ($logoUrl !== ''): ?>
+            <img class="logo" src="<?= e($logoUrl) ?>" alt="Logo sekolah">
+          <?php else: ?>
+            <div class="brand-mark">R</div>
+          <?php endif; ?>
           <div>
             <div class="brand-name"><?= e(APP_SHORT) ?></div>
             <div class="brand-sub"><?= e(mb_substr($p['sekolah'] ?: 'Sekolah Dasar', 0, 24)) ?></div>
@@ -126,6 +136,8 @@ function render_layout(string $content, string $title, string $page): string
 
 function render_auth(string $content, string $title): string
 {
+    $logoFile = basename(trim((string) (profil()['logo'] ?? '')));
+    $logoUrl = $logoFile !== '' && is_file(DATA_DIR . '/' . $logoFile) ? 'data/' . $logoFile : '';
     ob_start();
     ?>
     <!DOCTYPE html>
@@ -137,9 +149,17 @@ function render_auth(string $content, string $title): string
     <link rel="stylesheet" href="assets/style.css">
     </head>
     <body class="auth-body">
+    <?php if ($logoUrl !== ''): ?>
+      <div class="logo-tile" style="background-image:url('<?= e($logoUrl) ?>')"></div>
+      <img class="logo-corner" src="<?= e($logoUrl) ?>" alt="Logo sekolah">
+    <?php endif; ?>
     <div class="auth-wrap">
       <div class="auth-brand">
-        <div class="brand-mark big">R</div>
+        <?php if ($logoUrl !== ''): ?>
+          <img class="logo big" src="<?= e($logoUrl) ?>" alt="Logo sekolah">
+        <?php else: ?>
+          <div class="brand-mark big">R</div>
+        <?php endif; ?>
         <h1><?= e(APP_NAME) ?></h1>
         <p>Raport digital kelas 1-6 &middot; Semester 1 &amp; 2 &middot; Kurikulum Merdeka</p>
       </div>
