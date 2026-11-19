@@ -1,9 +1,28 @@
 (function () {
   var t = document.getElementById('toggleSidebar');
   var s = document.getElementById('sidebar');
-  if (t && s) {
-    t.addEventListener('click', function () { s.classList.toggle('open'); });
+  var b = document.getElementById('sidebarBackdrop');
+  function closeSidebar() {
+    if (s) s.classList.remove('open');
+    if (b) b.classList.remove('show');
   }
+  if (t && s) {
+    t.addEventListener('click', function () {
+      s.classList.toggle('open');
+      if (b) b.classList.toggle('show', s.classList.contains('open'));
+    });
+  }
+  if (b) {
+    b.addEventListener('click', closeSidebar);
+  }
+  if (s) {
+    s.addEventListener('click', function (ev) {
+      if (ev.target.closest('a')) closeSidebar();
+    });
+  }
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape') closeSidebar();
+  });
 
   document.addEventListener('submit', function (ev) {
     var f = ev.target;

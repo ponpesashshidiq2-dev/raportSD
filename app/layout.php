@@ -88,6 +88,7 @@ function render_layout(string $content, string $title, string $page): string
           <a class="nav-item" href="index.php?page=logout"><?= icon('logout') ?><span>Keluar</span></a>
         </nav>
       </aside>
+      <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
       <div class="main">
         <header class="topbar">
           <button class="btn-icon" id="toggleSidebar" type="button" aria-label="Menu">&#9776;</button>
