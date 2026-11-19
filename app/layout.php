@@ -67,10 +67,6 @@ function render_layout(string $content, string $title, string $page): string
     <link rel="stylesheet" href="assets/style.css">
     </head>
     <body>
-    <?php if ($logoUrl !== ''): ?>
-      <div class="logo-tile" style="background-image:url('<?= e($logoUrl) ?>')"></div>
-      <img class="logo-corner" src="<?= e($logoUrl) ?>" alt="Logo sekolah">
-    <?php endif; ?>
     <div class="app">
       <aside class="sidebar" id="sidebar">
         <div class="brand">
@@ -149,10 +145,6 @@ function render_auth(string $content, string $title): string
     <link rel="stylesheet" href="assets/style.css">
     </head>
     <body class="auth-body">
-    <?php if ($logoUrl !== ''): ?>
-      <div class="logo-tile" style="background-image:url('<?= e($logoUrl) ?>')"></div>
-      <img class="logo-corner" src="<?= e($logoUrl) ?>" alt="Logo sekolah">
-    <?php endif; ?>
     <div class="auth-wrap">
       <div class="auth-brand">
         <?php if ($logoUrl !== ''): ?>

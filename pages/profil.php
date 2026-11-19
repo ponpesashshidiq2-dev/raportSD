@@ -248,7 +248,7 @@ page_head('Profil & Konteks Raport', 'Identitas sekolah, tahun ajaran, semester,
   <?php if (!is_admin()): ?>
     <div class="alert alert-info">Hanya administrator yang dapat mengunggah logo.</div>
   <?php else: ?>
-    <div class="hint mb">Logo tampil di bagian atas sampul halaman pertama, sebagai watermark background aplikasi (kecil berulang), logo besar di pojok kanan atas, serta ikon di sidebar &amp; halaman login. Tidak ikut tercetak saat cetak raport. Format PNG/JPG/JPEG/WEBP/GIF/SVG, maksimal 2 MB.</div>
+    <div class="hint mb">Logo tampil di bagian atas sampul halaman pertama serta ikon di sidebar &amp; halaman login. Tidak ikut tercetak saat cetak raport. Format PNG/JPG/JPEG/WEBP/GIF/SVG, maksimal 2 MB.</div>
     <div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap">
       <?php if (trim($p['logo']) !== ''): ?>
         <img src="data/<?= e($p['logo']) ?>" alt="Logo sampul" style="max-height:72px;max-width:150px;border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px">
